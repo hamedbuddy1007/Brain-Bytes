@@ -1,0 +1,421 @@
+/* ==========================================================================
+   BRAIN BYTES DESIGN SYSTEM — RICH MAROON + CHARCOAL PALETTE
+   Exact Specification:
+     - Primary rich maroon: #8E233B
+     - Deep maroon: #4A1022
+     - Main background: #202124
+     - Elevated panels and cards: #292A2E
+     - Hover surface: #343238
+     - Primary text: #F5F3F4
+     - Secondary text: #B8B2B7
+     - Borders: #414047
+     - Secondary maroon highlight: #B94B68
+     - Success: #22C55E (accessible green)
+     - Warning: #F59E0B (accessible amber)
+     - Error: #EF4444 (accessible red)
+   ========================================================================== */
+
+:root {
+  /* Core Charcoal Surfaces */
+  --bg-main: #202124;              /* Main background */
+  --bg-surface: #292A2E;           /* Elevated panels & cards */
+  --bg-surface-elevated: #292A2E;  /* Elevated panels & cards */
+  --bg-surface-subtle: #242528;    /* Slightly darker charcoal inset */
+  --bg-surface-hover: #343238;     /* Hover surface */
+
+  /* Rich Maroon Brand System */
+  --maroon-primary: #8E233B;       /* Primary rich maroon */
+  --maroon-deep: #4A1022;          /* Deep maroon (accents/gradients) */
+  --maroon-highlight: #B94B68;     /* Secondary maroon highlight */
+  --maroon-subtle: rgba(142, 35, 59, 0.16);
+  --maroon-border: rgba(142, 35, 59, 0.45);
+  --maroon-glow: rgba(142, 35, 59, 0.35);
+
+  /* High-Contrast Accessible Text System */
+  --text-main: #F5F3F4;            /* Primary text */
+  --text-body: #F5F3F4;            /* Body text */
+  --text-muted: #B8B2B7;           /* Secondary text */
+  --text-dim: #8E8A90;             /* Tertiary / helper hints */
+
+  /* Borders & Dividers */
+  --border-subtle: #414047;        /* Standard charcoal borders */
+  --border-strong: #54535B;        /* Interactive / emphasized borders */
+  --border-active: #8E233B;        /* Active focus border */
+
+  /* Semantic Feedback States */
+  --color-success: #22C55E;        /* Accessible green */
+  --success-subtle: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(34, 197, 94, 0.4);
+
+  --color-warning: #F59E0B;        /* Accessible amber */
+  --warning-subtle: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.4);
+
+  --color-danger: #EF4444;         /* Accessible red */
+  --danger-subtle: rgba(239, 68, 68, 0.14);
+  --danger-border: rgba(239, 68, 68, 0.4);
+
+  /* Shadows & Elevations */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.7);
+  --glow-maroon: 0 0 20px rgba(142, 35, 59, 0.35);
+  --glow-highlight: 0 0 20px rgba(185, 75, 104, 0.35);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* Geometry & Layout */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+
+  --header-height: 72px;
+  --max-content-width: 1240px;
+
+  /* Backward Compatibility Aliases for components */
+  --accent-molten: var(--maroon-primary);
+  --accent-solar: var(--maroon-highlight);
+  --accent-gold: var(--maroon-highlight);
+  --molten-subtle: var(--maroon-subtle);
+  --molten-border: var(--maroon-border);
+  --solar-subtle: rgba(185, 75, 104, 0.16);
+  --gold-subtle: rgba(185, 75, 104, 0.14);
+  --gold-border: rgba(185, 75, 104, 0.4);
+  --glow-molten: var(--glow-maroon);
+  --glow-gold: var(--glow-highlight);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-body);
+  background-color: var(--bg-main);
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(74, 16, 34, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(142, 35, 59, 0.12) 0%, transparent 45%);
+  background-attachment: fixed;
+  color: var(--text-body);
+  overflow-x: hidden;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--maroon-highlight);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--text-main);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--maroon-highlight);
+  outline-offset: 2px;
+}
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--maroon-primary);
+}
+
+/* Utility Helpers */
+.w-full {
+  width: 100%;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-maroon {
+  color: var(--maroon-primary);
+}
+
+.text-maroon-highlight {
+  color: var(--maroon-highlight);
+}
+
+.text-molten {
+  color: var(--maroon-highlight);
+}
+
+.text-solar {
+  color: var(--maroon-highlight);
+}
+
+.text-gold {
+  color: var(--maroon-highlight);
+}
+
+.text-warm-white {
+  color: var(--text-main);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-emerald {
+  color: var(--color-success);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.max-w-3xl {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ==========================================================================
+   BUTTON SYSTEM (Rich Maroon + Charcoal Theme)
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+  padding: 13px 26px;
+  font-size: 1.02rem;
+  border-radius: var(--radius-md);
+}
+
+/* Primary Action: Rich Maroon with Deep Maroon Accent Gradient */
+.btn-primary {
+  background: linear-gradient(135deg, var(--maroon-primary) 0%, #A42B45 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 14px rgba(142, 35, 59, 0.35);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--maroon-highlight) 0%, var(--maroon-primary) 100%);
+  box-shadow: 0 6px 20px rgba(142, 35, 59, 0.5);
+  transform: translateY(-2px);
+  color: #FFFFFF;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary Button: Elevated Charcoal with Subtle Border */
+.btn-secondary {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+  border-color: var(--maroon-border);
+}
+
+/* Outline Maroon Button */
+.btn-outline-solar,
+.btn-outline-maroon {
+  background-color: transparent;
+  color: var(--maroon-highlight);
+  border: 1.5px solid var(--maroon-border);
+}
+
+.btn-outline-solar:hover,
+.btn-outline-maroon:hover {
+  background-color: var(--maroon-subtle);
+  border-color: var(--maroon-primary);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* Locked / Disabled Button */
+.btn-locked {
+  background-color: #242528;
+  color: var(--text-dim);
+  border: 1px solid #36363C;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-danger:hover {
+  background-color: #DC2626;
+}
+
+.btn-danger-outline {
+  background-color: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--danger-border);
+}
+
+.btn-danger-outline:hover {
+  background-color: var(--danger-subtle);
+  border-color: var(--color-danger);
+}
+
+/* Section Architecture */
+.section-wrapper {
+  padding: 84px 24px;
+  position: relative;
+}
+
+.section-container {
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+}
+
+.section-header {
+  margin-bottom: 48px;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background-color: var(--maroon-subtle);
+  color: var(--maroon-highlight);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--maroon-border);
+}
+
+.section-title {
+  font-size: 2.4rem;
+  letter-spacing: -0.03em;
+  margin-bottom: 14px;
+  color: var(--text-main);
+}
+
+.section-subtitle {
+  font-size: 1.08rem;
+  color: var(--text-muted);
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .section-wrapper {
+    padding: 56px 16px;
+  }
+  .section-title {
+    font-size: 1.85rem;
+  }
+  .section-subtitle {
+    font-size: 0.95rem;
+  }
+}
