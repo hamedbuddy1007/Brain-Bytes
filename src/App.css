@@ -6747,6 +6747,19 @@
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
+.pill-concluded {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ADE80;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
 /* --------------------------------------------------------------------------
    Selected Tab Cockpit View
    -------------------------------------------------------------------------- */
@@ -7915,5 +7928,42 @@
     justify-content: center;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Tournament Master State Alert Banners in Arena
+   -------------------------------------------------------------------------- */
+.arena-status-banner-paused,
+.arena-status-banner-standby,
+.arena-status-banner-completed {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  animation: fadeIn 0.3s ease-out;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.arena-status-banner-paused {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #FBBF24;
+}
+
+.arena-status-banner-standby {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #38BDF8;
+}
+
+.arena-status-banner-completed {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #4ADE80;
+}
+
 
 

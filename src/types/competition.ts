@@ -97,6 +97,7 @@ export interface AdminSettings {
   arenaNotice: string;
   roundStates: RoundStateMap;
   adminCustomized?: boolean;
+  competitionStatus?: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 }
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
@@ -108,6 +109,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
     2: 'locked',
     3: 'locked',
   },
+  competitionStatus: 'LIVE',
 };
 
 export interface AdminLeaderboardEntry {

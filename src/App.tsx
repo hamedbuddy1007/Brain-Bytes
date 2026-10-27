@@ -14,6 +14,7 @@ import { ProjectorLeaderboard } from './components/ProjectorLeaderboard';
 import type {
   Participant,
   AdminSettings,
+  RoundStatus,
 } from './types/competition';
 import { checkAdminSession, terminateAdminSession } from './services/adminAuthService';
 import {
@@ -169,33 +170,46 @@ export function App() {
   // Restore and synchronize competition state with Neon PostgreSQL
   useEffect(() => {
     let isMounted = true;
-    apiRequest<{
-      status: string;
-      active_round: number | null;
-      registration_open: boolean;
-      round_states: Record<string, 'active' | 'locked' | 'completed'>;
-    }>('/competition/state')
-      .then((state) => {
-        if (!isMounted || !state) return;
-        setSettingsState((prev) => {
-          const updated: AdminSettings = {
-            ...prev,
-            isRegistrationOpen: state.registration_open ?? prev.isRegistrationOpen,
-            roundStates: {
-              1: state.round_states?.['1'] || prev.roundStates[1] || 'active',
-              2: state.round_states?.['2'] || prev.roundStates[2] || 'locked',
-              3: state.round_states?.['3'] || prev.roundStates[3] || 'locked',
-            },
-          };
-          saveAdminSettings(updated);
-          return updated;
+
+    const syncState = () => {
+      apiRequest<{
+        status: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
+        active_round: number | null;
+        registration_open: boolean;
+        round_states: Record<string, 'active' | 'locked' | 'completed'>;
+      }>('/competition/state')
+        .then((state) => {
+          if (!isMounted || !state) return;
+          setSettingsState((prev) => {
+            const nextStatus = (state.status as 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED') || prev.competitionStatus || 'LIVE';
+            const updated: AdminSettings = {
+              ...prev,
+              competitionStatus: nextStatus,
+              isRegistrationOpen: state.registration_open ?? prev.isRegistrationOpen,
+              roundStates: {
+                1: state.round_states?.['1'] || (state.round_states as Record<string, RoundStatus>)?.[1] || prev.roundStates[1] || 'active',
+                2: state.round_states?.['2'] || (state.round_states as Record<string, RoundStatus>)?.[2] || prev.roundStates[2] || 'locked',
+                3: state.round_states?.['3'] || (state.round_states as Record<string, RoundStatus>)?.[3] || prev.roundStates[3] || 'locked',
+              },
+            };
+            saveAdminSettings(updated);
+            try {
+              localStorage.setItem('bb_tournament_global_state', nextStatus);
+            } catch {}
+            return updated;
+          });
+        })
+        .catch((err) => {
+          console.warn('Unable to synchronize competition state from database:', err);
         });
-      })
-      .catch((err) => {
-        console.warn('Unable to synchronize competition state from database:', err);
-      });
+    };
+
+    syncState();
+    const pollId = setInterval(syncState, 3000);
+
     return () => {
       isMounted = false;
+      clearInterval(pollId);
     };
   }, []);
 
@@ -208,6 +222,7 @@ export function App() {
       apiRequest('/admin/competition/state', {
         method: 'PATCH',
         body: JSON.stringify({
+          status: next.competitionStatus,
           registrationOpen: next.isRegistrationOpen,
           roundStates: {
             '1': next.roundStates[1] || 'active',
@@ -323,7 +338,24 @@ export function App() {
       return;
     }
 
-    const targetStatus = settings.roundStates[roundId] || 'locked';
+    if (settings.competitionStatus === 'PAUSED') {
+      alert('The tournament master has temporarily paused the competition. Round entries and test terminals are on standby.');
+      return;
+    }
+    if (settings.competitionStatus === 'NOT_STARTED') {
+      alert('The competition has not started yet. Please standby for the tournament administrator.');
+      return;
+    }
+    if (settings.competitionStatus === 'COMPLETED') {
+      alert('The competition has concluded.');
+      return;
+    }
+
+    const targetStatus = settings.roundStates[roundId] || (settings.roundStates as Record<string, RoundStatus>)[String(roundId)] || 'locked';
+    if (targetStatus === 'completed') {
+      alert(`Round ${roundId} has concluded. Stage entries and submissions are closed.`);
+      return;
+    }
     if (targetStatus === 'locked') {
       alert(`Round ${roundId} is currently locked by the event administration.`);
       return;
@@ -486,6 +518,7 @@ export function App() {
       {effectiveView === 'arena' && (
         <CompetitionArenaPage
           roundStates={settings.roundStates}
+          competitionStatus={settings.competitionStatus}
           activeParticipant={activeParticipant}
           onSelectRound={handleSelectRoundCard}
           onBackToHome={() => navigateToView('home')}

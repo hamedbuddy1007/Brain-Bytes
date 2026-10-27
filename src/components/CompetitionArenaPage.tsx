@@ -4,6 +4,7 @@ import type { RoundStateMap, Participant } from '../types/competition';
 
 interface CompetitionArenaPageProps {
   roundStates: RoundStateMap;
+  competitionStatus?: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
   activeParticipant: Participant | null;
   onSelectRound: (roundId: number) => void;
   onBackToHome: () => void;
@@ -76,6 +77,7 @@ const ARENA_ROUNDS: RoundTabMeta[] = [
 
 export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
   roundStates,
+  competitionStatus = 'LIVE',
   activeParticipant,
   onSelectRound,
   onBackToHome,
@@ -98,7 +100,7 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
   });
 
   const activeRoundMeta = ARENA_ROUNDS.find((r) => r.id === selectedTabId) || ARENA_ROUNDS[0];
-  const activeRoundStatus = roundStates[activeRoundMeta.id] || 'locked';
+  const activeRoundStatus = roundStates[activeRoundMeta.id] || (roundStates as Record<string, 'active' | 'locked' | 'completed'>)[String(activeRoundMeta.id)] || 'locked';
   const isLocked = activeRoundStatus === 'locked';
   const isCompleted = activeRoundStatus === 'completed';
 
@@ -209,6 +211,32 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
       <div className="arena-ambient-glow" aria-hidden="true" />
 
       <div className="arena-main-content">
+        {/* Tournament Master State Banners */}
+        {competitionStatus === 'PAUSED' && (
+          <div className="arena-status-banner-paused" role="alert">
+            <Icon name="clock" size={20} />
+            <div className="banner-text">
+              <strong>TOURNAMENT PAUSED BY MASTER CONTROL:</strong> Testing is currently paused. Round entries and candidate timers are on standby.
+            </div>
+          </div>
+        )}
+        {competitionStatus === 'NOT_STARTED' && (
+          <div className="arena-status-banner-standby" role="alert">
+            <Icon name="clock" size={20} />
+            <div className="banner-text">
+              <strong>COMPETITION NOT STARTED:</strong> Waiting for the tournament proctor to launch the live arena.
+            </div>
+          </div>
+        )}
+        {competitionStatus === 'COMPLETED' && (
+          <div className="arena-status-banner-completed" role="alert">
+            <Icon name="check-circle" size={20} />
+            <div className="banner-text">
+              <strong>TOURNAMENT CONCLUDED:</strong> All stages have concluded. Check live standings on the auditorium broadcast.
+            </div>
+          </div>
+        )}
+
         {/* Cockpit Intro Banner */}
         <section className="arena-hero-banner">
           <div className="arena-badge-pill">
@@ -225,7 +253,7 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
         {/* ONLY Tabs to the Game Pages */}
         <nav className="arena-tabs-nav" aria-label="Game Pages Tabs" id="arena-game-tabs">
           {ARENA_ROUNDS.map((round) => {
-            const status = roundStates[round.id] || 'locked';
+            const status = roundStates[round.id] || (roundStates as Record<string, 'active' | 'locked' | 'completed'>)[String(round.id)] || 'locked';
             const isTabSelected = selectedTabId === round.id;
             const roundSubmitted = Boolean(
               activeParticipant?.attempts?.some(
@@ -258,7 +286,12 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 </div>
 
                 <div className="tab-status-pill">
-                  {roundSubmitted ? (
+                  {status === 'completed' ? (
+                    <span className="pill-concluded">
+                      <Icon name="check-circle" size={12} />
+                      <span>Concluded</span>
+                    </span>
+                  ) : roundSubmitted ? (
                     <span className="pill-completed">
                       <Icon name="check-circle" size={12} />
                       <span>Submitted</span>
@@ -299,15 +332,15 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
             </div>
 
             <div className="stage-status-box">
-              {isSubmittedByParticipant ? (
-                <div className="stage-status-indicator stage-status-completed">
-                  <Icon name="check-circle" size={18} />
-                  <span>Submission Received</span>
-                </div>
-              ) : isCompleted ? (
+              {isCompleted ? (
                 <div className="stage-status-indicator stage-status-completed">
                   <Icon name="check-circle" size={18} />
                   <span>Stage Concluded</span>
+                </div>
+              ) : isSubmittedByParticipant ? (
+                <div className="stage-status-indicator stage-status-completed">
+                  <Icon name="check-circle" size={18} />
+                  <span>Submission Received</span>
                 </div>
               ) : isLocked ? (
                 <div className="stage-status-indicator stage-status-locked">
@@ -371,11 +404,26 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
 
           {/* Direct Launch Action for the Selected Tab */}
           <div className="stage-cta-container">
-            {isSubmittedByParticipant ? (
+            {isCompleted ? (
+              <div className="stage-done-notice" style={{ borderColor: 'rgba(34, 197, 94, 0.4)', background: 'rgba(34, 197, 94, 0.08)', color: '#4ADE80' }}>
+                <Icon name="check-circle" size={20} />
+                <span>Stage Concluded — Entries and submissions are closed.</span>
+              </div>
+            ) : isSubmittedByParticipant ? (
               <div className="stage-done-notice">
                 <Icon name="check-circle" size={20} />
                 <span>You have already submitted this round. Answers are locked.</span>
               </div>
+            ) : competitionStatus === 'PAUSED' ? (
+              <button type="button" disabled className="btn-stage-action btn-disabled" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.08)' }}>
+                <Icon name="clock" size={18} />
+                <span>Competition Paused by Tournament Master</span>
+              </button>
+            ) : competitionStatus === 'NOT_STARTED' ? (
+              <button type="button" disabled className="btn-stage-action btn-disabled">
+                <Icon name="clock" size={18} />
+                <span>Competition Not Started</span>
+              </button>
             ) : isLocked ? (
               <button type="button" disabled className="btn-stage-action btn-disabled">
                 <Icon name="lock" size={18} />

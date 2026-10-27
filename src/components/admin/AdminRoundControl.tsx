@@ -150,14 +150,38 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     };
   }, []);
 
-  // Push the global status to the server; participants are only affected if this succeeds
-  const pushGlobalStatus = (status: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED') => {
-    apiRequest('/admin/competition/state', {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    }).catch((err: unknown) => {
+  // Push the global status to the server; participants and UI are synced upon confirmation
+  const pushGlobalStatus = async (status: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED') => {
+    try {
+      await apiRequest('/admin/competition/state', {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      setGlobalCompetitionState(status);
+      setCompetitionStateLocal(status);
+      onUpdateSettings({
+        ...settings,
+        competitionStatus: status,
+      });
+
+      const messageMap: Record<string, string> = {
+        PAUSED: 'Tournament Master State set to PAUSED. Active timers are frozen on all candidate terminals and question interactions are locked.',
+        LIVE: 'Tournament Master State set to LIVE. Examination resumed; pause duration has been automatically credited to active participant countdowns.',
+        NOT_STARTED: 'Tournament Master State set to NOT STARTED. Candidate stage entries are blocked.',
+        COMPLETED: 'Tournament Master State set to COMPLETED. Concluded competition.',
+      };
+
+      setResetToast({
+        message: messageMap[status] || `Tournament Master State updated to ${status}.`,
+        roundId: 0,
+      });
+
+      if (onLogAudit) {
+        onLogAudit(`Admin changed Tournament Master State to ${status}`);
+      }
+    } catch (err: unknown) {
       alert(`The server did not accept the state change (${err instanceof Error ? err.message : 'unknown error'}). Participants are NOT affected. Check that you are signed in and the backend is running.`);
-    });
+    }
   };
 
   // Confirmation Modal for Consequential Actions
@@ -423,15 +447,11 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
         title: `Change Competition State to ${newState}`,
         description: `Warning: Setting global state to ${newState} will broadcast a tournament state update to all connected competitor terminals. Continue?`,
         onConfirm: () => {
-          setGlobalCompetitionState(newState);
-          setCompetitionStateLocal(newState);
           pushGlobalStatus(newState);
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         },
       });
     } else {
-      setGlobalCompetitionState(newState);
-      setCompetitionStateLocal(newState);
       pushGlobalStatus(newState);
     }
   };

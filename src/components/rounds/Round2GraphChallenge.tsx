@@ -149,6 +149,29 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [reauthCode, setReauthCode] = useState('');
+  const [isCompetitionPaused, setIsCompetitionPaused] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('bb_tournament_global_state') === 'PAUSED';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const state = localStorage.getItem('bb_tournament_global_state');
+        if (state === 'PAUSED') setIsCompetitionPaused(true);
+        else if (state === 'LIVE') setIsCompetitionPaused(false);
+      } catch {}
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('bb_storage_sync', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('bb_storage_sync', handleSync);
+    };
+  }, []);
 
 
 
@@ -673,12 +696,17 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
           active: boolean;
           deadline_at?: string;
           server_now?: string;
+          is_paused?: boolean;
+          competition_status?: string;
         }>('/rounds/2/attempts/active-deadline');
 
+        if (res?.is_paused !== undefined) {
+          setIsCompetitionPaused(Boolean(res.is_paused));
+        }
         if (res?.active && res.deadline_at) {
           const newDeadline = new Date(res.deadline_at).getTime();
           setDeadlineMs((prev) => {
-            if (prev && newDeadline > prev + 1000) {
+            if (prev && Math.abs(newDeadline - prev) > 1000) {
               return newDeadline;
             }
             return prev || newDeadline;
@@ -690,7 +718,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
       } catch {
         // network jitter, continue
       }
-    }, 6000);
+    }, 2500);
 
     return () => clearInterval(pollInterval);
   }, [isSubmitted, attemptId]);
@@ -698,7 +726,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
   // Timer: dynamic duration + active deadline
   const { formattedTime } = useExamTimer({
     durationSeconds: configuredDurationSeconds,
-    isRunning: !isSubmitted,
+    isRunning: !isSubmitted && !isCompetitionPaused,
     deadlineMs,
     clockOffsetMs,
     onExpire: handleAutoSubmit,
@@ -738,7 +766,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
 
   // Option selection
   const handleOptionClick = (optionIdx: number) => {
-    if (isSubmitted) return;
+    if (isSubmitted || isCompetitionPaused) return;
     const qId = currentQuestion.id;
 
     setSelectedAnswers((prev) => {
@@ -996,6 +1024,42 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
 
   return (
     <div className="stitch-exam-root" id="round2-exam-cockpit">
+      {/* TOURNAMENT MASTER STATE: PAUSED OVERLAY */}
+      {isCompetitionPaused && !isSubmitted && (
+        <div className="modal-backdrop" style={{ zIndex: 999998, backdropFilter: 'blur(20px)', background: 'rgba(11, 14, 23, 0.88)' }}>
+          <div className="credential-modal-card animate-fadeIn" style={{ maxWidth: '500px', textAlign: 'center', borderColor: '#F59E0B', boxShadow: '0 0 50px rgba(245, 158, 11, 0.3)' }}>
+            <div style={{ color: '#F59E0B', marginBottom: '14px' }}>
+              <Icon name="clock" size={44} />
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', borderRadius: '20px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#F59E0B', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', marginBottom: '14px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+              <span>TOURNAMENT MASTER STATE // PAUSED</span>
+            </div>
+            <h3 style={{ color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 900, marginBottom: '10px' }}>
+              Competition Temporarily Paused
+            </h3>
+            <p style={{ color: '#CBD5E1', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '20px' }}>
+              The event administrator has paused the tournament. All question inputs and countdown timers across all candidate terminals are temporarily frozen.
+            </p>
+            <div style={{ padding: '16px 20px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.25)', marginBottom: '18px' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase' }}>
+                Your Clock is Frozen At
+              </div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#F59E0B', fontFamily: 'monospace', marginTop: '4px' }}>
+                {formattedTime}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#CBD5E1', marginTop: '6px' }}>
+                🔒 All selected answers are safely saved on the server. No time will be lost.
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#94A3B8', fontSize: '0.82rem' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+              <span>Testing will resume automatically once the proctor sets status to Live.</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Anti-cheat Proctor Warning Modal (Warning 1/2, Warning 2/2, or Auto-Submit on 3rd violation) */}
       {showWarningModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }}>

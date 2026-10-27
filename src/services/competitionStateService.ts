@@ -152,11 +152,17 @@ export function saveAdminSettings(settings: AdminSettings): void {
 }
 
 export function getGlobalCompetitionState(): GlobalCompetitionState {
-  return (safeGetItem(KEY_COMPETITION_STATE) as GlobalCompetitionState) || 'LIVE';
+  return (safeGetItem(KEY_COMPETITION_STATE) as GlobalCompetitionState) || getAdminSettings().competitionStatus || 'LIVE';
 }
 
 export function setGlobalCompetitionState(state: GlobalCompetitionState): void {
   safeSetItem(KEY_COMPETITION_STATE, state);
+  try {
+    const settings = getAdminSettings();
+    saveAdminSettings({ ...settings, competitionStatus: state });
+  } catch {
+    // ignore
+  }
 }
 
 // ---------------------------------------------------------------------------

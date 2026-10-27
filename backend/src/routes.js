@@ -530,12 +530,18 @@ router.get('/rounds/:roundId/questions', async (req, res, next) => {
   }
 });
 
-// Participant: Live polling for active attempt deadline (detects admin time extensions in real-time)
+// Participant: Live polling for active attempt deadline (detects admin time extensions & master pause state in real-time)
 router.get('/rounds/:roundId/attempts/active-deadline', requireAuth('participant'), async (req, res, next) => {
   try {
     const roundId = Number(req.params.roundId);
     if (!roundSchema.safeParse(roundId).success) return res.status(400).json({ error: 'Invalid round.' });
     const participantId = req.auth.id;
+
+    const stateResult = await query('SELECT status, round_states FROM competition_state WHERE singleton=TRUE');
+    const compState = stateResult.rows[0] || {};
+    const compStatus = compState.status || 'LIVE';
+    const roundStates = compState.round_states || {};
+    const roundStatus = roundStates[String(roundId)] || roundStates[roundId] || 'active';
 
     const result = await query(
       "SELECT id, deadline_at, (NOW() AT TIME ZONE 'UTC') AS server_now FROM attempts WHERE participant_id = $1 AND round_id = $2 AND submitted_at IS NULL",
@@ -543,7 +549,14 @@ router.get('/rounds/:roundId/attempts/active-deadline', requireAuth('participant
     );
 
     if (!result.rowCount) {
-      return res.json({ active: false });
+      return res.json({
+        active: false,
+        competition_status: compStatus,
+        is_paused: compStatus === 'PAUSED',
+        is_completed: compStatus === 'COMPLETED',
+        is_not_started: compStatus === 'NOT_STARTED',
+        round_status: roundStatus,
+      });
     }
 
     const row = result.rows[0];
@@ -552,6 +565,11 @@ router.get('/rounds/:roundId/attempts/active-deadline', requireAuth('participant
       attemptId: Number(row.id),
       deadline_at: row.deadline_at,
       server_now: row.server_now,
+      competition_status: compStatus,
+      is_paused: compStatus === 'PAUSED',
+      is_completed: compStatus === 'COMPLETED',
+      is_not_started: compStatus === 'NOT_STARTED',
+      round_status: roundStatus,
     });
   } catch (error) {
     next(error);
@@ -568,6 +586,11 @@ router.post('/rounds/:roundId/attempts/start', requireAuth('participant'), async
     const attempt = await withTransaction(async (client) => {
       const participant = await client.query('SELECT id FROM participants WHERE id=$1', [participantId]);
       if (!participant.rowCount) throw Object.assign(new Error('Participant not found.'), { status: 404 });
+
+      const state = await client.query('SELECT status, active_round, round_states, round_durations FROM competition_state WHERE singleton=TRUE FOR SHARE');
+      const current = state.rows[0];
+      const roundStates = current?.round_states || {};
+      const isRoundActive = roundStates[String(roundId)] === 'active' || roundStates[roundId] === 'active';
 
       // Check for existing attempt first
       const existing = await client.query(
@@ -601,7 +624,20 @@ router.post('/rounds/:roundId/attempts/start', requireAuth('participant'), async
             })),
             answers: userAnswers,
           };
+        }
 
+        // Unsubmitted attempt: enforce tournament master state before resuming
+        if (current?.status === 'PAUSED') {
+          throw Object.assign(new Error('The competition is currently paused by the tournament master.'), { status: 423 });
+        }
+        if (current?.status === 'NOT_STARTED') {
+          throw Object.assign(new Error('The competition has not started yet. Please wait for the tournament administrator.'), { status: 423 });
+        }
+        if (current?.status === 'COMPLETED') {
+          throw Object.assign(new Error('The competition has concluded.'), { status: 423 });
+        }
+        if (!isRoundActive) {
+          throw Object.assign(new Error(`Round ${roundId} is currently locked by event administrators.`), { status: 423 });
         }
 
         // Block resuming an unfinished attempt if the participant is not qualified.
@@ -609,14 +645,16 @@ router.post('/rounds/:roundId/attempts/start', requireAuth('participant'), async
         return row;
       }
 
-      const state = await client.query('SELECT status, active_round, round_states, round_durations FROM competition_state WHERE singleton=TRUE FOR SHARE');
-
-      const current = state.rows[0];
-      const roundStates = current?.round_states || {};
-      const isRoundActive = roundStates[String(roundId)] === 'active' || roundStates[roundId] === 'active';
-
-      if (!current || current.status === 'PAUSED' || current.status === 'COMPLETED' || !isRoundActive) {
-        throw Object.assign(new Error('This round is not currently open.'), { status: 423 });
+      if (!current || current.status === 'PAUSED' || current.status === 'COMPLETED' || current.status === 'NOT_STARTED' || !isRoundActive) {
+        throw Object.assign(new Error(
+          current?.status === 'PAUSED'
+            ? 'The competition is currently paused by the tournament master.'
+            : current?.status === 'COMPLETED'
+            ? 'The competition has concluded.'
+            : current?.status === 'NOT_STARTED'
+            ? 'The competition has not started yet.'
+            : `Round ${roundId} is currently locked by event administrators.`
+        ), { status: 423 });
       }
 
       // A participant must qualify before a new attempt can be created.
@@ -1174,6 +1212,33 @@ router.patch('/admin/competition/state', requireAuth('admin'), async (req, res, 
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid competition settings.' });
     const { status, activeRound, registrationOpen, roundStates, roundDurations } = parsed.data;
+
+    // Fetch previous competition state for pause/resume handling
+    const currentStateResult = await query('SELECT status, paused_at FROM competition_state WHERE singleton=TRUE');
+    const prevRow = currentStateResult.rows[0] || {};
+    const prevStatus = prevRow.status;
+    const prevPausedAt = prevRow.paused_at;
+
+    let updatePausedAtSql = '';
+    let compensatedCount = 0;
+
+    if (status === 'PAUSED' && prevStatus !== 'PAUSED') {
+      updatePausedAtSql = ', paused_at = NOW()';
+    } else if (status === 'LIVE' && prevStatus === 'PAUSED') {
+      updatePausedAtSql = ', paused_at = NULL';
+      if (prevPausedAt) {
+        // Automatically extend deadline for all in-progress attempts by the paused duration
+        const extResult = await query(
+          `UPDATE attempts
+           SET deadline_at = deadline_at + (NOW() - $1::timestamptz)
+           WHERE submitted_at IS NULL
+           RETURNING id`,
+          [prevPausedAt],
+        );
+        compensatedCount = extResult.rowCount;
+      }
+    }
+
     const result = await query(
       `UPDATE competition_state SET
          status=COALESCE($1,status),
@@ -1182,10 +1247,16 @@ router.patch('/admin/competition/state', requireAuth('admin'), async (req, res, 
          round_states=CASE WHEN $5::jsonb IS NOT NULL THEN COALESCE(round_states, '{"1":"active","2":"locked","3":"locked"}'::jsonb) || $5::jsonb ELSE round_states END,
          round_durations=CASE WHEN $6::jsonb IS NOT NULL THEN COALESCE(round_durations, '{"1":600,"2":600,"3":180}'::jsonb) || $6::jsonb ELSE round_durations END,
          updated_at=NOW()
+         ${updatePausedAtSql}
        WHERE singleton=TRUE RETURNING *`,
       [status ?? null, activeRound !== undefined, activeRound ?? null, registrationOpen ?? null, roundStates ? JSON.stringify(roundStates) : null, roundDurations ? JSON.stringify(roundDurations) : null],
     );
-    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES($1,$2,$3,$4)', ['admin', req.auth.id, 'competition.state.updated', JSON.stringify(parsed.data)]);
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      status === 'PAUSED' ? 'competition.paused' : status === 'LIVE' && prevStatus === 'PAUSED' ? 'competition.resumed' : 'competition.state.updated',
+      JSON.stringify({ ...parsed.data, compensatedAttempts: compensatedCount }),
+    ]);
     res.json(result.rows[0]);
   } catch (error) {
     next(error);
