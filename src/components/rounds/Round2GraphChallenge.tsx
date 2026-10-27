@@ -399,7 +399,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     const handleReset = (e?: Event) => {
       const ce = e as CustomEvent<{ roundId?: number }> | undefined;
       const targetRound = ce?.detail?.roundId;
-      if (!targetRound || targetRound === 2) {
+      if (targetRound === 2) {
         if (participantKey) {
           try {
             localStorage.removeItem(`bb_answers_r2_${participantKey}`);
@@ -429,10 +429,8 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
       }
     };
     window.addEventListener('bb_round_reset', handleReset);
-    window.addEventListener('bb_storage_sync', handleReset);
     return () => {
       window.removeEventListener('bb_round_reset', handleReset);
-      window.removeEventListener('bb_storage_sync', handleReset);
     };
   }, [participantKey, roundQuestions, onExit]);
 

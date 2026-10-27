@@ -392,7 +392,7 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     const handleReset = (e?: Event) => {
       const ce = e as CustomEvent<{ roundId?: number }> | undefined;
       const targetRound = ce?.detail?.roundId;
-      if (!targetRound || targetRound === 1) {
+      if (targetRound === 1) {
         if (participantKey) {
           try {
             localStorage.removeItem(`bb_answers_r1_${participantKey}`);
@@ -422,10 +422,8 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
       }
     };
     window.addEventListener('bb_round_reset', handleReset);
-    window.addEventListener('bb_storage_sync', handleReset);
     return () => {
       window.removeEventListener('bb_round_reset', handleReset);
-      window.removeEventListener('bb_storage_sync', handleReset);
     };
   }, [participantKey, roundQuestions, onExit]);
 

@@ -112,7 +112,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               INDIVIDUAL DESK AUTHENTICATION
             </div>
             <p style={{ fontSize: '0.76rem', color: '#B8B2B7', lineHeight: 1.45, margin: 0 }}>
-              Each candidate is assigned a unique, proctor-approved Access Code (e.g. <code>BB-XXXX</code>) upon registering. Candidates log in individually on the Login page to unlock the Competition Arena.
+              Each candidate is assigned a unique, proctor-approved Access Code (e.g. <code>DS-XXXX</code>) upon registering. Candidates log in individually on the Login page to unlock the Competition Arena.
             </p>
             <div style={{ marginTop: '10px', fontSize: '0.74rem', color: '#EF4444' }}>
               → Manage, approve, or reject candidate access codes in the <strong>Participants</strong> tab.

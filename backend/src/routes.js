@@ -75,8 +75,8 @@ async function assertRoundQualification(client, participantId, roundId) {
 
 
 function generateAccessCode() {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  let code = 'BB-';
+  const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = 'DS-';
   for (let i = 0; i < 4; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
@@ -260,7 +260,11 @@ router.post('/participants/register', async (req, res, next) => {
 // Check registration approval status (polled by registration page)
 router.get('/participants/registration-status/:rollNumber', async (req, res, next) => {
   try {
-    const roll = req.params.rollNumber.trim().toUpperCase();
+    const rollParsed = z.string().trim().min(1).max(50).safeParse(req.params.rollNumber);
+    if (!rollParsed.success) {
+      return res.status(400).json({ error: 'Invalid roll number format.' });
+    }
+    const roll = rollParsed.data.toUpperCase();
     const result = await query(
       'SELECT id, full_name, roll_number, college_name, department, year_of_study, access_code, approval_status FROM participants WHERE UPPER(roll_number)=UPPER($1) LIMIT 1',
       [roll],
@@ -283,7 +287,7 @@ router.get('/participants/registration-status/:rollNumber', async (req, res, nex
   }
 });
 
-// Participant Login with Access Code (BB-XXXX)
+// Participant Login with Access Code (DS-XXXX)
 router.post('/participants/login-access-code', async (req, res, next) => {
   try {
     const body = z.object({
@@ -291,7 +295,7 @@ router.post('/participants/login-access-code', async (req, res, next) => {
     }).safeParse(req.body);
 
     if (!body.success) {
-      return res.status(400).json({ error: 'Enter your valid Access Code (e.g. BB-XXXX).' });
+      return res.status(400).json({ error: 'Enter your valid Access Code (e.g. DS-XXXX).' });
     }
 
     const code = body.data.accessCode.trim().toUpperCase();
@@ -355,7 +359,13 @@ router.post('/participants/reauth', async (req, res, next) => {
       });
     }
 
-    const { rollNumber } = req.body || {};
+    const bodyParsed = z.object({
+      rollNumber: z.string().trim().max(50).optional(),
+    }).safeParse(req.body || {});
+    if (!bodyParsed.success) {
+      return res.status(400).json({ error: 'Invalid reauth request parameters.' });
+    }
+    const { rollNumber } = bodyParsed.data;
 
     const result = await query(
       'SELECT id, full_name, roll_number, college_name, department, year_of_study, ticket_id, assigned_seat, access_code, approval_status, created_at FROM participants WHERE id=$1',
@@ -441,7 +451,14 @@ router.get('/participants/me', requireAuth('participant'), async (req, res, next
 
 router.post('/participants/proctor-event', requireAuth('participant'), async (req, res, next) => {
   try {
-    const { eventType, details } = req.body || {};
+    const proctorParsed = z.object({
+      eventType: z.string().trim().min(1).max(100).optional(),
+      details: z.record(z.unknown()).optional(),
+    }).safeParse(req.body || {});
+    if (!proctorParsed.success) {
+      return res.status(400).json({ error: 'Invalid proctor payload.' });
+    }
+    const { eventType, details } = proctorParsed.data;
     await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
       'participant',
       req.auth.id,
@@ -1027,6 +1044,9 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
 router.post('/admin/participants/:id/approve', requireAuth('admin'), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ error: 'Invalid participant ID.' });
+    }
     const updated = await query(
       "UPDATE participants SET approval_status = 'APPROVED' WHERE id = $1 RETURNING id, full_name, roll_number, access_code, approval_status",
       [id],
@@ -1047,6 +1067,9 @@ router.post('/admin/participants/:id/approve', requireAuth('admin'), async (req,
 router.post('/admin/participants/:id/reject', requireAuth('admin'), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ error: 'Invalid participant ID.' });
+    }
     const updated = await query(
       "UPDATE participants SET approval_status = 'REJECTED' WHERE id = $1 RETURNING id, full_name, roll_number, approval_status",
       [id],

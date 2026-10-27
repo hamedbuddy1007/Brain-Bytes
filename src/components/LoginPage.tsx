@@ -28,7 +28,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     const trimmed = accessCode.trim().toUpperCase();
     if (!trimmed) {
-      setErrorMessage('Please enter your unique candidate Access Code (e.g. BB-XXXX).');
+      setErrorMessage('Please enter your unique candidate Access Code (e.g. DS-XXXX).');
       return;
     }
 
@@ -133,7 +133,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   id="input-access-code"
                   type="text"
                   required
-                  placeholder="e.g. BB-A4X9"
+                  placeholder="e.g. DS-A4X9"
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                   className="login-input-control"

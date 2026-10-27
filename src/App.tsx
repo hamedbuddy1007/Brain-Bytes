@@ -161,7 +161,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [currentView]);
+  }, []);
 
   // Synchronized Event State across Participant and Admin interfaces
   const [settings, setSettingsState] = useState<AdminSettings>(() => getAdminSettings());
@@ -268,6 +268,8 @@ export function App() {
         setCurrentView('admin');
       } else if (path === '/register' || hash.includes('register')) {
         setCurrentView('register');
+      } else if (path === '/login' || hash.includes('login')) {
+        setCurrentView('login');
       } else if (path === '/arena' || hash.includes('arena')) {
         setCurrentView('arena');
       } else if (hash.includes('round-1')) {

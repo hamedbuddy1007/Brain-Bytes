@@ -397,7 +397,7 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
     const handleReset = (e?: Event) => {
       const ce = e as CustomEvent<{ roundId?: number }> | undefined;
       const targetRound = ce?.detail?.roundId;
-      if (!targetRound || targetRound === 3) {
+      if (targetRound === 3) {
         if (participantKey) {
           try {
             localStorage.removeItem(`bb_answers_r3_${participantKey}`);
@@ -427,10 +427,8 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
       }
     };
     window.addEventListener('bb_round_reset', handleReset);
-    window.addEventListener('bb_storage_sync', handleReset);
     return () => {
       window.removeEventListener('bb_round_reset', handleReset);
-      window.removeEventListener('bb_storage_sync', handleReset);
     };
   }, [participantKey, roundQuestions, onExit]);
 

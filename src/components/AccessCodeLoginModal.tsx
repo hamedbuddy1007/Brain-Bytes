@@ -123,7 +123,7 @@ export const AccessCodeLoginModal: React.FC<AccessCodeLoginModalProps> = ({
                 id="input-access-code"
                 type="text"
                 required
-                placeholder="Enter Access Code"
+                placeholder="e.g. DS-A4X9"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 className="field-input-control uppercase-text monospace-font code-input-field"
