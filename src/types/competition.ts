@@ -6,6 +6,8 @@ export interface Participant {
   id?: number;
   fullName: string;
   rollNumber: string;
+  department?: string;
+  yearOfStudy?: string;
   joinCode?: string;
   registeredAt: string;
   ticketId: string;

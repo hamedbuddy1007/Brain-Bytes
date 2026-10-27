@@ -738,6 +738,12 @@
   border: 1px solid var(--admin-border-subtle);
 }
 
+.status-pill.is-completed {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
 /* Recent Activity List */
 .recent-activity-list {
   display: flex;

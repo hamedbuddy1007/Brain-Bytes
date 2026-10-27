@@ -36,7 +36,7 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
         <div className="admin-login-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
           <div className="admin-login-top-pill" role="status">
             <span className="pill-dot" />
-            <span className="pill-text">EVALUATION PORTAL • V4.2</span>
+            <span className="pill-text">ADMIN CONTROL CENTER</span>
           </div>
           <div className="admin-login-card" style={{ padding: '48px 36px', textAlign: 'center', maxWidth: '420px', width: '100%', marginTop: '20px' }}>
             <div className="admin-login-brand-icon" style={{ margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -115,7 +115,7 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
         {/* Top Header Pill Badge */}
         <div className="admin-login-top-pill" role="status">
           <span className="pill-dot" />
-          <span className="pill-text">EVALUATION PORTAL • V4.2</span>
+          <span className="pill-text">ADMIN CONTROL CENTER</span>
         </div>
 
         {/* Central Login Card */}
@@ -128,11 +128,10 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
 
             <div className="admin-brand-title-row">
               <span className="admin-brand-name">BRAIN BYTES</span>
-              <span className="admin-brand-tag">DATA QUIZ</span>
             </div>
 
             <h1 className="admin-card-heading">Admin Login</h1>
-            <p className="admin-card-subheading">Sign in to manage the competition.</p>
+            <p className="admin-card-subheading">Sign in to manage the competition</p>
           </div>
 
           {/* Login Form */}
@@ -141,9 +140,8 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
             <div className="admin-input-group">
               <div className="admin-input-label-row">
                 <label htmlFor="admin-username-input" className="admin-input-label">
-                  USERNAME OR EMAIL
+                  Username or Email
                 </label>
-                <span className="admin-input-meta-code">SYS_ID</span>
               </div>
               <div className="admin-input-field-wrapper">
                 <Icon name="id-card" size={16} className="admin-field-icon" />
@@ -153,7 +151,7 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
                   type="text"
                   autoComplete="username"
                   className="admin-text-input"
-                  placeholder="admin@brainbytes.org or username"
+                  placeholder="Enter username or email"
                   value={identifier}
                   onChange={(e) => {
                     setIdentifier(e.target.value);
@@ -169,9 +167,8 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
             <div className="admin-input-group">
               <div className="admin-input-label-row">
                 <label htmlFor="admin-password-input" className="admin-input-label">
-                  PASSWORD
+                  Password
                 </label>
-                <span className="admin-input-meta-code">SECURE_KEY</span>
               </div>
               <div className="admin-input-field-wrapper">
                 <Icon name="key" size={16} className="admin-field-icon" />
@@ -181,7 +178,7 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   className="admin-text-input"
-                  placeholder="••••••••••••"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -236,10 +233,7 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
           <div className="admin-card-footer">
             <div className="admin-footer-security">
               <Icon name="lock" size={13} className="admin-footer-lock-icon" />
-              <span>TLS 1.3 Encrypted</span>
-            </div>
-            <div className="admin-footer-host">
-              <span>HOST: BB-NODE-01</span>
+              <span>Encrypted Secure Session</span>
             </div>
           </div>
         </div>

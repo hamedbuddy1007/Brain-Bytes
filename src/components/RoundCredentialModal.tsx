@@ -10,7 +10,7 @@ interface RoundCredentialModalProps {
   existingParticipant: Participant | null;
   isRegistrationOpen: boolean;
   roundStatus: RoundStatus;
-  activeJoinCodes: string[];
+  activeJoinCodes?: string[];
 }
 
 export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
@@ -20,10 +20,12 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
   existingParticipant,
   isRegistrationOpen,
   roundStatus,
-  activeJoinCodes,
+  activeJoinCodes: _activeJoinCodes,
 }) => {
   const [fullName, setFullName] = useState(existingParticipant?.fullName || '');
   const [rollNumber, setRollNumber] = useState(existingParticipant?.rollNumber || '');
+  const [department, setDepartment] = useState(existingParticipant?.department || 'CSE');
+  const [yearOfStudy, setYearOfStudy] = useState(existingParticipant?.yearOfStudy || '1st Year');
   const [joinCode, setJoinCode] = useState(existingParticipant?.joinCode || '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,13 +68,6 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
     tag: `ROUND ${roundId} ACCESS`,
   };
 
-  const handleFillDemo = () => {
-    setFullName('Aarav Sharma');
-    setRollNumber('CS23-B1042');
-    setJoinCode(activeJoinCodes[0] || 'BYTE2026');
-    setError(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -110,12 +105,13 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      const affiliationLabel = `${department} • ${yearOfStudy}`;
       const participant = await apiRequest<Participant & { token?: string }>('/participants/register', {
         method: 'POST',
         body: JSON.stringify({
           fullName: trimmedName,
           rollNumber: trimmedRoll,
-          collegeName: existingParticipant?.collegeName || 'Department of Computer Science',
+          collegeName: affiliationLabel,
           joinCode: trimmedCode,
           roundId: roundId ?? undefined,
         }),
@@ -128,6 +124,9 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
 
       onSubmit({
         ...participant,
+        department,
+        yearOfStudy,
+        collegeName: affiliationLabel,
         joinCode: trimmedCode,
       });
     } catch (err: unknown) {
@@ -225,7 +224,7 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
               ref={inputRef}
               type="text"
               className="field-input"
-              placeholder="e.g. Aarav Sharma"
+              placeholder="Enter full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={isSubmitting}
@@ -241,7 +240,7 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
               id="participant-roll"
               type="text"
               className="field-input"
-              placeholder="e.g. CS23-B1042"
+              placeholder="Enter roll number"
               value={rollNumber}
               onChange={(e) => setRollNumber(e.target.value)}
               disabled={isSubmitting}
@@ -249,37 +248,64 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
             />
           </div>
 
+          {/* Department Selection Dropdown */}
+          <div className="form-field-group">
+            <label htmlFor="participant-department" className="field-label">
+              Department
+            </label>
+            <select
+              id="participant-department"
+              className="field-input field-select"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              disabled={isSubmitting}
+              required
+            >
+              <option value="CSE">CSE — Computer Science & Engineering</option>
+              <option value="CSM">CSM — Artificial Intelligence & Machine Learning</option>
+              <option value="CSD">CSD — Data Science</option>
+              <option value="ECE">ECE — Electronics & Communication Engineering</option>
+              <option value="ME">ME — Mechanical Engineering</option>
+              <option value="CIVIL">CIVIL — Civil Engineering</option>
+            </select>
+          </div>
+
+          {/* Year of Study Selection Dropdown */}
+          <div className="form-field-group">
+            <label htmlFor="participant-year" className="field-label">
+              Year of Study
+            </label>
+            <select
+              id="participant-year"
+              className="field-input field-select"
+              value={yearOfStudy}
+              onChange={(e) => setYearOfStudy(e.target.value)}
+              disabled={isSubmitting}
+              required
+            >
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </select>
+          </div>
+
           <div className="form-field-group">
             <div className="field-label-row">
               <label htmlFor="participant-code" className="field-label">
                 Event Join Code
               </label>
-              <span className="field-hint">
-                Default: <code>{activeJoinCodes[0] || 'BYTE2026'}</code>
-              </span>
             </div>
             <input
               id="participant-code"
               type="text"
               className="field-input code-input"
-              placeholder="e.g. BYTE2026"
+              placeholder="Enter event join code"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               disabled={isSubmitting}
               required
             />
-          </div>
-
-          <div className="demo-fill-row">
-            <button
-              type="button"
-              className="btn-text-demo"
-              onClick={handleFillDemo}
-              disabled={isSubmitting}
-            >
-              <Icon name="sparkles" size={14} />
-              <span>Fill Demo Credentials</span>
-            </button>
           </div>
 
           <div className="credential-modal-actions">

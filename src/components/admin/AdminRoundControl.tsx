@@ -154,6 +154,62 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     onConfirm: () => { },
   });
 
+  const handleCompleteRound = (roundId: 1 | 2 | 3) => {
+    const isAlreadyCompleted = settings.roundStates[roundId] === 'completed';
+    if (isAlreadyCompleted) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Reopen Round ${roundId}`,
+        description: `Round ${roundId} is currently marked as Completed. Would you like to reopen this round to Active status?`,
+        onConfirm: () => {
+          const nextStates = {
+            ...settings.roundStates,
+            [roundId]: 'active' as RoundStatus,
+          };
+          onUpdateSettings({
+            ...settings,
+            adminCustomized: true,
+            roundStates: nextStates,
+          });
+          apiRequest('/admin/competition/state', {
+            method: 'PATCH',
+            body: JSON.stringify({ roundStates: { [roundId]: 'active' } }),
+          }).catch((err) => console.warn('Failed updating round state:', err));
+          if (onLogAudit) {
+            onLogAudit(`Admin reopened Round ${roundId} to active`);
+          }
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        },
+      });
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: `Complete Round ${roundId} — Conclude Stage`,
+      description: `Are you sure you want to officially mark Round ${roundId} as Completed? This will conclude testing for this stage, lock candidate entries, and finalize submissions.`,
+      onConfirm: () => {
+        const nextStates = {
+          ...settings.roundStates,
+          [roundId]: 'completed' as RoundStatus,
+        };
+        onUpdateSettings({
+          ...settings,
+          adminCustomized: true,
+          roundStates: nextStates,
+        });
+        apiRequest('/admin/competition/state', {
+          method: 'PATCH',
+          body: JSON.stringify({ roundStates: { [roundId]: 'completed' } }),
+        }).catch((err) => console.warn('Failed updating round state:', err));
+        if (onLogAudit) {
+          onLogAudit(`Admin marked Round ${roundId} as Completed`);
+        }
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
+  };
+
   const handleToggleRound = (roundId: 1 | 2 | 3) => {
     const currentStatus = settings.roundStates[roundId];
     const newStatus: RoundStatus = currentStatus === 'active' ? 'locked' : 'active';
@@ -164,26 +220,36 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
         title: `Lock Entry for Round ${roundId}`,
         description: `Are you sure you want to lock new entries for Round ${roundId}? Existing candidate sessions will continue until their countdown expires.`,
         onConfirm: () => {
+          const nextStates = {
+            ...settings.roundStates,
+            [roundId]: 'locked' as RoundStatus,
+          };
           onUpdateSettings({
             ...settings,
             adminCustomized: true,
-            roundStates: {
-              ...settings.roundStates,
-              [roundId]: 'locked',
-            },
+            roundStates: nextStates,
           });
+          apiRequest('/admin/competition/state', {
+            method: 'PATCH',
+            body: JSON.stringify({ roundStates: { [roundId]: 'locked' } }),
+          }).catch((err) => console.warn('Failed updating round state:', err));
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         },
       });
     } else {
+      const nextStates = {
+        ...settings.roundStates,
+        [roundId]: 'active' as RoundStatus,
+      };
       onUpdateSettings({
         ...settings,
         adminCustomized: true,
-        roundStates: {
-          ...settings.roundStates,
-          [roundId]: 'active',
-        },
+        roundStates: nextStates,
       });
+      apiRequest('/admin/competition/state', {
+        method: 'PATCH',
+        body: JSON.stringify({ roundStates: { [roundId]: 'active' } }),
+      }).catch((err) => console.warn('Failed updating round state:', err));
     }
   };
 
@@ -403,19 +469,30 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               <span className="stat-label">GATE ACCESS</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                 <span
-                  className={`status-pill ${settings.roundStates[selectedRound] === 'active' ? 'is-active' : 'is-locked'
-                    }`}
+                  className={`status-pill ${
+                    settings.roundStates[selectedRound] === 'completed'
+                      ? 'is-completed'
+                      : settings.roundStates[selectedRound] === 'active'
+                        ? 'is-active'
+                        : 'is-locked'
+                  }`}
                 >
-                  {settings.roundStates[selectedRound] === 'active' ? 'Active / Open' : 'Locked'}
+                  {settings.roundStates[selectedRound] === 'completed'
+                    ? 'Completed'
+                    : settings.roundStates[selectedRound] === 'active'
+                      ? 'Active / Open'
+                      : 'Locked'}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: '#B8B2B7', fontFamily: 'JetBrains Mono, monospace' }}>
                   {selectedRound === 1 ? r1Duration : selectedRound === 2 ? r2Duration : r3Duration} min limit
                 </span>
               </div>
               <span className="stat-subtext">
-                {settings.roundStates[selectedRound] === 'active'
-                  ? 'Candidates may enter and attempt'
-                  : 'Candidate entry restricted'}
+                {settings.roundStates[selectedRound] === 'completed'
+                  ? 'Stage concluded • Submissions frozen'
+                  : settings.roundStates[selectedRound] === 'active'
+                    ? 'Candidates may enter and attempt'
+                    : 'Candidate entry restricted'}
               </span>
             </div>
 
@@ -450,16 +527,26 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           <div className="selected-event-reset-bar">
             <div className="reset-bar-info">
               <div className="reset-bar-title">
-                <Icon name="refresh-cw" size={16} style={{ color: '#EF4444' }} />
-                <span>Reset All Entries & Participant Progress for Selected Event</span>
+                <Icon name="sliders" size={16} style={{ color: '#F59E0B' }} />
+                <span>Stage Actions for Selected Event</span>
               </div>
               <p className="reset-bar-desc">
-                Permanently clears all submissions, scores, saved answers, and persistent timers for{' '}
-                <strong>{selectedRoundName}</strong>. All participating terminals will be synchronized and reset to allow fresh re-entry.
+                Conclude stage testing or reset submissions, scores, and draft attempts for{' '}
+                <strong>{selectedRoundName}</strong>.
               </p>
             </div>
 
-            <div className="reset-bar-actions">
+            <div className="reset-bar-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`btn ${settings.roundStates[selectedRound] === 'completed' ? 'btn-success-outline' : 'btn-success'}`}
+                onClick={() => handleCompleteRound(selectedRound)}
+                id="btn-complete-selected-round"
+                title={settings.roundStates[selectedRound] === 'completed' ? 'Round is completed. Click to reopen.' : 'Officially mark this round as completed'}
+              >
+                <Icon name="check-circle" size={15} />
+                <span>{settings.roundStates[selectedRound] === 'completed' ? `Round ${selectedRound} Completed (Reopen)` : `Complete Round ${selectedRound}`}</span>
+              </button>
               <button
                 type="button"
                 className="btn btn-danger btn-reset-stage"
@@ -481,8 +568,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           <div className="round-card-main-content">
             <div className="round-card-header-row">
               <span className="round-card-num-badge">ROUND 1</span>
-              <span className={`status-pill ${r1State === 'active' ? 'is-active' : 'is-locked'}`}>
-                {r1State === 'active' ? 'Active' : 'Locked'}
+              <span className={`status-pill ${r1State === 'completed' ? 'is-completed' : r1State === 'active' ? 'is-active' : 'is-locked'}`}>
+                {r1State === 'completed' ? 'Completed' : r1State === 'active' ? 'Active' : 'Locked'}
               </span>
             </div>
 
@@ -514,6 +601,15 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               </button>
               <button
                 type="button"
+                className={`btn w-full ${r1State === 'completed' ? 'btn-success-outline' : 'btn-success'}`}
+                onClick={() => handleCompleteRound(1)}
+                title={r1State === 'completed' ? 'Round 1 is completed. Click to reopen.' : 'Officially mark Round 1 as completed'}
+              >
+                <Icon name="check-circle" size={15} />
+                <span>{r1State === 'completed' ? 'Round 1 Completed (Reopen)' : 'Complete Round 1'}</span>
+              </button>
+              <button
+                type="button"
                 className="btn btn-danger-outline w-full"
                 onClick={() => handleResetRound(1)}
                 title="Reset all entries and participant progress for Round 1"
@@ -530,8 +626,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           <div className="round-card-main-content">
             <div className="round-card-header-row">
               <span className="round-card-num-badge">ROUND 2</span>
-              <span className={`status-pill ${r2State === 'active' ? 'is-active' : 'is-locked'}`}>
-                {r2State === 'active' ? 'Active' : 'Locked'}
+              <span className={`status-pill ${r2State === 'completed' ? 'is-completed' : r2State === 'active' ? 'is-active' : 'is-locked'}`}>
+                {r2State === 'completed' ? 'Completed' : r2State === 'active' ? 'Active' : 'Locked'}
               </span>
             </div>
 
@@ -563,6 +659,15 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               </button>
               <button
                 type="button"
+                className={`btn w-full ${r2State === 'completed' ? 'btn-success-outline' : 'btn-success'}`}
+                onClick={() => handleCompleteRound(2)}
+                title={r2State === 'completed' ? 'Round 2 is completed. Click to reopen.' : 'Officially mark Round 2 as completed'}
+              >
+                <Icon name="check-circle" size={15} />
+                <span>{r2State === 'completed' ? 'Round 2 Completed (Reopen)' : 'Complete Round 2'}</span>
+              </button>
+              <button
+                type="button"
                 className="btn btn-danger-outline w-full"
                 onClick={() => handleResetRound(2)}
                 title="Reset all entries and participant progress for Round 2"
@@ -579,8 +684,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           <div className="round-card-main-content">
             <div className="round-card-header-row">
               <span className="round-card-num-badge">ROUND 3</span>
-              <span className={`status-pill ${r3State === 'active' ? 'is-active' : 'is-locked'}`}>
-                {r3State === 'active' ? 'Active' : 'Locked'}
+              <span className={`status-pill ${r3State === 'completed' ? 'is-completed' : r3State === 'active' ? 'is-active' : 'is-locked'}`}>
+                {r3State === 'completed' ? 'Completed' : r3State === 'active' ? 'Active' : 'Locked'}
               </span>
             </div>
 
@@ -617,6 +722,15 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               >
                 <Icon name={r3State === 'active' ? 'lock' : 'play'} size={15} />
                 <span>{r3State === 'active' ? 'Lock Round 3 Entry' : 'Start Round 3'}</span>
+              </button>
+              <button
+                type="button"
+                className={`btn w-full ${r3State === 'completed' ? 'btn-success-outline' : 'btn-success'}`}
+                onClick={() => handleCompleteRound(3)}
+                title={r3State === 'completed' ? 'Round 3 is completed. Click to reopen.' : 'Officially mark Round 3 as completed'}
+              >
+                <Icon name="check-circle" size={15} />
+                <span>{r3State === 'completed' ? 'Round 3 Completed (Reopen)' : 'Complete Round 3'}</span>
               </button>
               <button
                 type="button"

@@ -86,6 +86,7 @@ export const ParticipantLandingPage: React.FC<ParticipantLandingPageProps> = ({
           {ROUND_CARDS.map((card) => {
             const status = roundStates[card.id] || 'locked';
             const isLocked = status === 'locked';
+            const isCompleted = status === 'completed';
 
             return (
               <div
@@ -93,7 +94,7 @@ export const ParticipantLandingPage: React.FC<ParticipantLandingPageProps> = ({
                 role="button"
                 tabIndex={0}
                 className={`minimal-round-card card-round-${card.id} ${
-                  isLocked ? 'is-locked' : 'is-active'
+                  isCompleted ? 'is-completed' : isLocked ? 'is-locked' : 'is-active'
                 }`}
                 style={
                   {
@@ -114,7 +115,12 @@ export const ParticipantLandingPage: React.FC<ParticipantLandingPageProps> = ({
                 <div className="card-top-row">
                   <span className="card-round-badge">{card.label}</span>
                   <div className="card-status-indicator">
-                    {isLocked ? (
+                    {isCompleted ? (
+                      <span className="status-badge-completed" title="Round Concluded" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Icon name="check-circle" size={13} />
+                        <span>Concluded</span>
+                      </span>
+                    ) : isLocked ? (
                       <span className="status-badge-locked" title="Locked by Host">
                         <Icon name="lock" size={13} />
                         <span>Locked</span>
@@ -139,10 +145,10 @@ export const ParticipantLandingPage: React.FC<ParticipantLandingPageProps> = ({
 
                 <div className="card-action-bar">
                   <span className="card-action-text">
-                    {isLocked ? 'Locked by Host' : 'Click to Enter'}
+                    {isCompleted ? 'Stage Concluded' : isLocked ? 'Locked by Host' : 'Click to Enter'}
                   </span>
                   <Icon
-                    name={isLocked ? 'lock' : 'arrow-right'}
+                    name={isCompleted ? 'check-circle' : isLocked ? 'lock' : 'arrow-right'}
                     size={16}
                     className="card-action-icon"
                   />

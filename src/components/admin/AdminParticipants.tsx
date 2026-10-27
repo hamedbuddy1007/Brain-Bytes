@@ -141,7 +141,7 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
             <input
               type="text"
               className="search-input-field"
-              placeholder="Search by name, roll number, or campus..."
+              placeholder="Search by name, roll number, or department..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search participants"
@@ -233,7 +233,7 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                 <tr>
                   <th>Candidate</th>
                   <th>Roll Number</th>
-                  <th>Campus / Institution</th>
+                  <th>Department / Year</th>
                   <th>Round Progress (R1 / R2 / R3)</th>
                   <th>Score</th>
                   <th>Status</th>
