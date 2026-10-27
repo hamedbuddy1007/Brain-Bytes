@@ -1,0 +1,1623 @@
+export interface Round1Option {
+  key: 'A' | 'B' | 'C' | 'D';
+  label: string;
+  subtext?: string;
+}
+
+export interface Round1Question {
+  id: number;
+  numberStr: string;
+  indexRef: string;
+  domain: string;
+  paradigm: string;
+  difficulty: string;
+  marksStr: string;
+  prompt: string;
+  options: Round1Option[];
+  /** Official keys are deliberately server-only; these fields are absent from participant bundles. */
+  correctAnswer?: number;
+  explanation?: string;
+}
+
+export const ROUND_1_QUESTIONS: Round1Question[] = [
+  {
+    id: 1,
+    numberStr: '01',
+    indexRef: 'DM-2026-MCQ-002',
+    domain: "DBMS & SQL",
+    paradigm: "DATABASE_CORE",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "DBMS stands for?",
+    options: [
+      {
+        key: 'A',
+        label: "Database Management System",
+        subtext: "Software suite for storing and querying structured data",
+      },
+      {
+        key: 'B',
+        label: "Digital Base Memory Service",
+        subtext: "Hardware-level virtual storage driver",
+      },
+      {
+        key: 'C',
+        label: "Data Build System",
+        subtext: "Build automation compiler pipeline",
+      },
+      {
+        key: 'D',
+        label: "Database Machine Setup",
+        subtext: "Physical server provisioning routine",
+      },
+    ],
+  },
+  {
+    id: 2,
+    numberStr: '02',
+    indexRef: 'DM-2026-MCQ-003',
+    domain: "DBMS & SQL",
+    paradigm: "RELATIONAL_KEYS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which key uniquely identifies a row?",
+    options: [
+      {
+        key: 'A',
+        label: "Foreign key",
+        subtext: "Maintains referential integrity by referencing a target primary key",
+      },
+      {
+        key: 'B',
+        label: "Primary key",
+        subtext: "Unique and non-null constraint ensuring absolute row identity",
+      },
+      {
+        key: 'C',
+        label: "Duplicate key",
+        subtext: "Allows repeated index values",
+      },
+      {
+        key: 'D',
+        label: "Sort key",
+        subtext: "Controls physical disk cluster ordering",
+      },
+    ],
+  },
+  {
+    id: 3,
+    numberStr: '03',
+    indexRef: 'DM-2026-MCQ-030',
+    domain: "Data Analytics & Statistics",
+    paradigm: "ROBUST_STATISTICS",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which measure is most affected by outliers?",
+    options: [
+      {
+        key: 'A',
+        label: "Mean",
+        subtext: "Arithmetic average incorporating raw outlier values directly into summation",
+      },
+      {
+        key: 'B',
+        label: "Median",
+        subtext: "Order statistic resistant to extreme tail skewness",
+      },
+      {
+        key: 'C',
+        label: "Count",
+        subtext: "Cardinality unaffected by magnitude of values",
+      },
+      {
+        key: 'D',
+        label: "Mode always",
+        subtext: "Frequency peak unaffected by isolated single outliers",
+      },
+    ],
+  },
+  {
+    id: 4,
+    numberStr: '04',
+    indexRef: 'DM-2026-MCQ-011',
+    domain: "Python & Programming",
+    paradigm: "SYNTAX_TOKENS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which symbol starts a Python comment?",
+    options: [
+      {
+        key: 'A',
+        label: "//",
+        subtext: "Integer division in Python; C-style line comment",
+      },
+      {
+        key: 'B',
+        label: "#",
+        subtext: "Python interpreter token denoting single-line comments",
+      },
+      {
+        key: 'C',
+        label: "/*",
+        subtext: "C/Java multi-line comment delimiter",
+      },
+      {
+        key: 'D',
+        label: "--",
+        subtext: "SQL standard comment prefix",
+      },
+    ],
+  },
+  {
+    id: 5,
+    numberStr: '05',
+    indexRef: 'DM-2026-MCQ-029',
+    domain: "Data Analytics & Statistics",
+    paradigm: "BIVARIATE_ANALYSIS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Correlation describes what?",
+    options: [
+      {
+        key: 'A',
+        label: "File size",
+        subtext: "Storage volume consumed on disk",
+      },
+      {
+        key: 'B',
+        label: "Relationship between variables",
+        subtext: "Strength and direction of linear dependence between metrics",
+      },
+      {
+        key: 'C',
+        label: "Database key",
+        subtext: "Unique constraint mechanism",
+      },
+      {
+        key: 'D',
+        label: "Programming loop",
+        subtext: "Iterative control flow construct",
+      },
+    ],
+  },
+  {
+    id: 6,
+    numberStr: '06',
+    indexRef: 'DM-2026-MCQ-085',
+    domain: "Algorithms & Data Structures",
+    paradigm: "COMPLEXITY_THEORY",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Worst-case linear search complexity is?",
+    options: [
+      {
+        key: 'A',
+        label: "O(1)",
+        subtext: "Constant time complexity",
+      },
+      {
+        key: 'B',
+        label: "O(log n)",
+        subtext: "Logarithmic search complexity",
+      },
+      {
+        key: 'C',
+        label: "O(n)",
+        subtext: "Linear time complexity scaling proportionally with list size n",
+      },
+      {
+        key: 'D',
+        label: "O(n²)",
+        subtext: "Quadratic complexity typical of nested comparison sorts",
+      },
+    ],
+  },
+  {
+    id: 7,
+    numberStr: '07',
+    indexRef: 'DM-2026-MCQ-004',
+    domain: "DBMS & SQL",
+    paradigm: "DQL_QUERY",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which SQL command retrieves data?",
+    options: [
+      {
+        key: 'A',
+        label: "GET",
+        subtext: "HTTP request method; not an SQL query statement",
+      },
+      {
+        key: 'B',
+        label: "OPEN",
+        subtext: "Cursor activation command",
+      },
+      {
+        key: 'C',
+        label: "SELECT",
+        subtext: "Declarative data retrieval statement in relational algebra",
+      },
+      {
+        key: 'D',
+        label: "SHOWALL",
+        subtext: "Invalid SQL keyword",
+      },
+    ],
+  },
+  {
+    id: 8,
+    numberStr: '08',
+    indexRef: 'DM-2026-MCQ-013',
+    domain: "Python & Programming",
+    paradigm: "DATA_STRUCTURES",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which collection is ordered and changeable?",
+    options: [
+      {
+        key: 'A',
+        label: "tuple",
+        subtext: "Ordered but strictly immutable",
+      },
+      {
+        key: 'B',
+        label: "list",
+        subtext: "Dynamically sized, mutable ordered array sequence",
+      },
+      {
+        key: 'C',
+        label: "set",
+        subtext: "Unordered collection of distinct hashable items",
+      },
+      {
+        key: 'D',
+        label: "frozenset",
+        subtext: "Immutable variant of Python set",
+      },
+    ],
+  },
+  {
+    id: 9,
+    numberStr: '09',
+    indexRef: 'DM-2026-MCQ-043',
+    domain: "Big Data & Hadoop",
+    paradigm: "CLUSTER_MANAGEMENT",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which Hadoop component manages cluster resources?",
+    options: [
+      {
+        key: 'A',
+        label: "YARN",
+        subtext: "Yet Another Resource Negotiator; coordinates compute nodes and jobs",
+      },
+      {
+        key: 'B',
+        label: "HTML",
+        subtext: "Markup language for web formatting",
+      },
+      {
+        key: 'C',
+        label: "CSS",
+        subtext: "Stylesheet presentation language",
+      },
+      {
+        key: 'D',
+        label: "SMTP",
+        subtext: "Email routing network protocol",
+      },
+    ],
+  },
+  {
+    id: 10,
+    numberStr: '10',
+    indexRef: 'DM-2026-MCQ-034',
+    domain: "Data Science & Machine Learning",
+    paradigm: "UNSUPERVISED_CLUSTERING",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which algorithm is used for clustering?",
+    options: [
+      {
+        key: 'A',
+        label: "K-means",
+        subtext: "Partitions observations into k Voronoi clusters around geometric centroids",
+      },
+      {
+        key: 'B',
+        label: "Linear search",
+        subtext: "Sequential element scanning algorithm",
+      },
+      {
+        key: 'C',
+        label: "Bubble sort",
+        subtext: "Elementary comparison-based sorting procedure",
+      },
+      {
+        key: 'D',
+        label: "RSA",
+        subtext: "Asymmetric public-key cryptosystem",
+      },
+    ],
+  },
+  {
+    id: 11,
+    numberStr: '11',
+    indexRef: 'DM-2026-MCQ-012',
+    domain: "Python & Programming",
+    paradigm: "TYPE_SYSTEM",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which type stores True or False?",
+    options: [
+      {
+        key: 'A',
+        label: "int",
+        subtext: "Signed integer numeric representation",
+      },
+      {
+        key: 'B',
+        label: "str",
+        subtext: "Immutable Unicode character sequence",
+      },
+      {
+        key: 'C',
+        label: "bool",
+        subtext: "Boolean primitive supporting binary truth values",
+      },
+      {
+        key: 'D',
+        label: "list",
+        subtext: "Ordered mutable sequence collection",
+      },
+    ],
+  },
+  {
+    id: 12,
+    numberStr: '12',
+    indexRef: 'DM-2026-MCQ-015',
+    domain: "Python & Programming",
+    paradigm: "FUNCTION_DECLARATION",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which keyword defines a Python function?",
+    options: [
+      {
+        key: 'A',
+        label: "func",
+        subtext: "Keyword in Go and Swift",
+      },
+      {
+        key: 'B',
+        label: "define",
+        subtext: "Preprocessor directive in C/C++",
+      },
+      {
+        key: 'C',
+        label: "def",
+        subtext: "Reserved Python keyword initiating function header statement",
+      },
+      {
+        key: 'D',
+        label: "function",
+        subtext: "Keyword in JavaScript and PHP",
+      },
+    ],
+  },
+  {
+    id: 13,
+    numberStr: '13',
+    indexRef: 'DM-2026-MCQ-053',
+    domain: "Cybersecurity & Networks",
+    paradigm: "NETWORK_ROUTING",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "What does a router do?",
+    options: [
+      {
+        key: 'A',
+        label: "Forwards data between networks",
+        subtext: "Directs IP packets across heterogeneous subnets using routing tables",
+      },
+      {
+        key: 'B',
+        label: "Prints documents",
+        subtext: "Peripheral hardcopy spooling",
+      },
+      {
+        key: 'C',
+        label: "Compiles code",
+        subtext: "Source-to-binary compilation",
+      },
+      {
+        key: 'D',
+        label: "Creates charts",
+        subtext: "Data visualization tool",
+      },
+    ],
+  },
+  {
+    id: 14,
+    numberStr: '14',
+    indexRef: 'DM-2026-MCQ-048',
+    domain: "Big Data & Hadoop",
+    paradigm: "IN_MEMORY_COMPUTE",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which tool processes data in memory?",
+    options: [
+      {
+        key: 'A',
+        label: "Apache Spark",
+        subtext: "Uses Resilient Distributed Datasets (RDDs) for high-throughput in-memory execution",
+      },
+      {
+        key: 'B',
+        label: "MS Paint",
+        subtext: "Bitmap image illustration tool",
+      },
+      {
+        key: 'C',
+        label: "PowerPoint",
+        subtext: "Slide presentation software",
+      },
+      {
+        key: 'D',
+        label: "Calculator",
+        subtext: "Basic scalar arithmetic accessory",
+      },
+    ],
+  },
+  {
+    id: 15,
+    numberStr: '15',
+    indexRef: 'DM-2026-MCQ-021',
+    domain: "Data Analytics & Statistics",
+    paradigm: "DATA_WRANGLING",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "What is data cleaning?",
+    options: [
+      {
+        key: 'A',
+        label: "Deleting all data",
+        subtext: "Data purge or drop operation",
+      },
+      {
+        key: 'B',
+        label: "Fixing errors and inconsistencies",
+        subtext: "Correcting malformed, missing, and duplicate records",
+      },
+      {
+        key: 'C',
+        label: "Encrypting files",
+        subtext: "Cryptographic data protection at rest",
+      },
+      {
+        key: 'D',
+        label: "Drawing charts only",
+        subtext: "Data visualization and reporting",
+      },
+    ],
+  },
+  {
+    id: 16,
+    numberStr: '16',
+    indexRef: 'DM-2026-MCQ-005',
+    domain: "DBMS & SQL",
+    paradigm: "QUERY_FILTERING",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which clause filters rows?",
+    options: [
+      {
+        key: 'A',
+        label: "ORDER BY",
+        subtext: "Sorts rows after projection",
+      },
+      {
+        key: 'B',
+        label: "WHERE",
+        subtext: "Predicate clause filtering candidate rows before grouping",
+      },
+      {
+        key: 'C',
+        label: "GROUP BY",
+        subtext: "Aggregates matching rows into summary buckets",
+      },
+      {
+        key: 'D',
+        label: "FROM",
+        subtext: "Specifies table source relations",
+      },
+    ],
+  },
+  {
+    id: 17,
+    numberStr: '17',
+    indexRef: 'DM-2026-MCQ-023',
+    domain: "Data Analytics & Statistics",
+    paradigm: "ORDER_STATISTICS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which measure is the middle sorted value?",
+    options: [
+      {
+        key: 'A',
+        label: "Mean",
+        subtext: "Arithmetic summation balance point",
+      },
+      {
+        key: 'B',
+        label: "Median",
+        subtext: "Value at the 50th percentile of an ordered distribution",
+      },
+      {
+        key: 'C',
+        label: "Mode",
+        subtext: "Highest frequency distribution peak",
+      },
+      {
+        key: 'D',
+        label: "Variance",
+        subtext: "Average squared deviation from the mean",
+      },
+    ],
+  },
+  {
+    id: 18,
+    numberStr: '18',
+    indexRef: 'DM-2026-MCQ-094',
+    domain: "Databases, Data Tools & SQL",
+    paradigm: "RELATIONAL_ALGEBRA",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which join returns matching rows from both tables?",
+    options: [
+      {
+        key: 'A',
+        label: "INNER JOIN",
+        subtext: "Returns only rows satisfying the join condition in both left and right relations",
+      },
+      {
+        key: 'B',
+        label: "CROSS JOIN",
+        subtext: "Computes Cartesian product of both tables",
+      },
+      {
+        key: 'C',
+        label: "FULL JOIN",
+        subtext: "Preserves non-matching rows from both tables filled with NULLs",
+      },
+      {
+        key: 'D',
+        label: "SELF JOIN",
+        subtext: "Joins a table to itself",
+      },
+    ],
+  },
+  {
+    id: 19,
+    numberStr: '19',
+    indexRef: 'DM-2026-MCQ-014',
+    domain: "Python & Programming",
+    paradigm: "ARITHMETIC_PRECEDENCE",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "What is 3 + 2 * 4?",
+    options: [
+      {
+        key: 'A',
+        label: "20",
+        subtext: "Evaluates addition before multiplication: (3+2)*4",
+      },
+      {
+        key: 'B',
+        label: "14",
+        subtext: "Organizer answer key selection for test item #014",
+      },
+      {
+        key: 'C',
+        label: "24",
+        subtext: "Non-standard operator evaluation",
+      },
+      {
+        key: 'D',
+        label: "11",
+        subtext: "Standard operator precedence: 3 + (2*4)",
+      },
+    ],
+  },
+  {
+    id: 20,
+    numberStr: '20',
+    indexRef: 'DM-2026-MCQ-035',
+    domain: "Data Science & Machine Learning",
+    paradigm: "FEATURE_ENGINEERING",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "A feature is what in ML?",
+    options: [
+      {
+        key: 'A',
+        label: "Input variable",
+        subtext: "Independent attribute or predictor variable fed into model equations",
+      },
+      {
+        key: 'B',
+        label: "Final report",
+        subtext: "Summary output documentation",
+      },
+      {
+        key: 'C',
+        label: "Password",
+        subtext: "Security credential token",
+      },
+      {
+        key: 'D',
+        label: "Server",
+        subtext: "Hardware computing infrastructure",
+      },
+    ],
+  },
+  {
+    id: 21,
+    numberStr: '21',
+    indexRef: 'DM-2026-MCQ-038',
+    domain: "Data Science & Machine Learning",
+    paradigm: "MODEL_GENERALIZATION",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Overfitting means a model?",
+    options: [
+      {
+        key: 'A',
+        label: "Learns training noise too closely",
+        subtext: "Captures random sample variance, degrading performance on unseen data",
+      },
+      {
+        key: 'B',
+        label: "Has no input",
+        subtext: "Degenerate null input pipeline",
+      },
+      {
+        key: 'C',
+        label: "Encrypts data",
+        subtext: "Cryptographic security transformation",
+      },
+      {
+        key: 'D',
+        label: "Has no output",
+        subtext: "Divergent or non-terminating training loop",
+      },
+    ],
+  },
+  {
+    id: 22,
+    numberStr: '22',
+    indexRef: 'DM-2026-MCQ-024',
+    domain: "Data Analytics & Statistics",
+    paradigm: "VISUALIZATION",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which chart compares categories?",
+    options: [
+      {
+        key: 'A',
+        label: "Bar chart",
+        subtext: "Displays rectangular bars proportional to categorical metric values",
+      },
+      {
+        key: 'B',
+        label: "Network map",
+        subtext: "Visualizes relational node graph topologies",
+      },
+      {
+        key: 'C',
+        label: "Code editor",
+        subtext: "Development environment interface",
+      },
+      {
+        key: 'D',
+        label: "File tree",
+        subtext: "Hierarchical file system directory view",
+      },
+    ],
+  },
+  {
+    id: 23,
+    numberStr: '23',
+    indexRef: 'DM-2026-MCQ-056',
+    domain: "Cybersecurity & Networks",
+    paradigm: "DEFENSE_IN_DEPTH",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "A firewall helps to?",
+    options: [
+      {
+        key: 'A',
+        label: "Filter network traffic",
+        subtext: "Blocks unauthorized packets based on port, IP, and security policies",
+      },
+      {
+        key: 'B',
+        label: "Increase brightness",
+        subtext: "Display backlight adjustment",
+      },
+      {
+        key: 'C',
+        label: "Create charts",
+        subtext: "Plot rendering software",
+      },
+      {
+        key: 'D',
+        label: "Format text",
+        subtext: "Typography word processing",
+      },
+    ],
+  },
+  {
+    id: 24,
+    numberStr: '24',
+    indexRef: 'DM-2026-MCQ-017',
+    domain: "Python & Programming",
+    paradigm: "ASSOCIATIVE_ARRAYS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which structure stores key-value pairs?",
+    options: [
+      {
+        key: 'A',
+        label: "List",
+        subtext: "Index-based sequential array",
+      },
+      {
+        key: 'B',
+        label: "Tuple",
+        subtext: "Immutable sequence record",
+      },
+      {
+        key: 'C',
+        label: "Dictionary",
+        subtext: "Hash-mapped table associating unique keys to values",
+      },
+      {
+        key: 'D',
+        label: "Set",
+        subtext: "Collection of unique keys without assigned values",
+      },
+    ],
+  },
+  {
+    id: 25,
+    numberStr: '25',
+    indexRef: 'DM-2026-MCQ-058',
+    domain: "Cybersecurity & Networks",
+    paradigm: "IDENTITY_AUTHENTICATION",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "MFA means using?",
+    options: [
+      {
+        key: 'A',
+        label: "Multiple verification factors",
+        subtext: "Combines two or more independent factors: knowledge, possession, or inherence",
+      },
+      {
+        key: 'B',
+        label: "Multiple file attachments",
+        subtext: "Multi-part email MIME encoding",
+      },
+      {
+        key: 'C',
+        label: "One username",
+        subtext: "Single-factor user identifier",
+      },
+      {
+        key: 'D',
+        label: "A longer screen",
+        subtext: "Widescreen monitor resolution",
+      },
+    ],
+  },
+  {
+    id: 26,
+    numberStr: '26',
+    indexRef: 'DM-2026-MCQ-031',
+    domain: "Data Science & Machine Learning",
+    paradigm: "LEARNING_PARADIGMS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Supervised learning uses what?",
+    options: [
+      {
+        key: 'A',
+        label: "Labeled examples",
+        subtext: "Feature matrices paired with ground-truth target annotations",
+      },
+      {
+        key: 'B',
+        label: "No data",
+        subtext: "Zero-shot heuristic programming",
+      },
+      {
+        key: 'C',
+        label: "Only images",
+        subtext: "Computer vision domain specific constraint",
+      },
+      {
+        key: 'D',
+        label: "Only passwords",
+        subtext: "Authentication credential data",
+      },
+    ],
+  },
+  {
+    id: 27,
+    numberStr: '27',
+    indexRef: 'DM-2026-MCQ-010',
+    domain: "DBMS & SQL",
+    paradigm: "AGGREGATE_FUNCTIONS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which function counts rows?",
+    options: [
+      {
+        key: 'A',
+        label: "SUM()",
+        subtext: "Calculates numeric addition of values",
+      },
+      {
+        key: 'B',
+        label: "COUNT()",
+        subtext: "Returns total cardinality of matching records",
+      },
+      {
+        key: 'C',
+        label: "TOTAL()",
+        subtext: "SQLite floating-point sum function",
+      },
+      {
+        key: 'D',
+        label: "NUMBER()",
+        subtext: "Data type casting function",
+      },
+    ],
+  },
+  {
+    id: 28,
+    numberStr: '28',
+    indexRef: 'DM-2026-MCQ-046',
+    domain: "Big Data & Hadoop",
+    paradigm: "NOSQL_SYSTEMS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which database type supports flexible data models?",
+    options: [
+      {
+        key: 'A',
+        label: "NoSQL",
+        subtext: "Non-relational data stores supporting dynamic, schema-less structures",
+      },
+      {
+        key: 'B',
+        label: "Calculator",
+        subtext: "Numeric computation accessory",
+      },
+      {
+        key: 'C',
+        label: "Compiler",
+        subtext: "Machine code translation utility",
+      },
+      {
+        key: 'D',
+        label: "Plain text only",
+        subtext: "Unformatted byte stream",
+      },
+    ],
+  },
+  {
+    id: 29,
+    numberStr: '29',
+    indexRef: 'DM-2026-MCQ-099',
+    domain: "Databases, Data Tools & SQL",
+    paradigm: "SCHEMA_NORMALIZATION",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which normal form removes partial dependency?",
+    options: [
+      {
+        key: 'A',
+        label: "1NF",
+        subtext: "Enforces atomic attribute values and eliminates repeating groups",
+      },
+      {
+        key: 'B',
+        label: "2NF",
+        subtext: "Requires 1NF and ensures all non-prime attributes are fully dependent on the primary key",
+      },
+      {
+        key: 'C',
+        label: "3NF",
+        subtext: "Removes transitive functional dependencies",
+      },
+      {
+        key: 'D',
+        label: "4NF",
+        subtext: "Eliminates non-trivial multi-valued dependencies",
+      },
+    ],
+  },
+  {
+    id: 30,
+    numberStr: '30',
+    indexRef: 'DM-2026-MCQ-019',
+    domain: "Python & Programming",
+    paradigm: "BUILTIN_FUNCTIONS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "What does len([4,5,6]) return?",
+    options: [
+      {
+        key: 'A',
+        label: "2",
+        subtext: "Index of last element in zero-based indexing",
+      },
+      {
+        key: 'B',
+        label: "3",
+        subtext: "Exact element count of the 3-item list",
+      },
+      {
+        key: 'C',
+        label: "4",
+        subtext: "First element value",
+      },
+      {
+        key: 'D',
+        label: "6",
+        subtext: "Last element value",
+      },
+    ],
+  },
+  {
+    id: 31,
+    numberStr: '31',
+    indexRef: 'DM-2026-MCQ-022',
+    domain: "Data Analytics & Statistics",
+    paradigm: "CENTRAL_TENDENCY",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which measure is the arithmetic average?",
+    options: [
+      {
+        key: 'A',
+        label: "Median",
+        subtext: "Positional midpoint of sorted distribution",
+      },
+      {
+        key: 'B',
+        label: "Mode",
+        subtext: "Most frequently occurring value",
+      },
+      {
+        key: 'C',
+        label: "Mean",
+        subtext: "Sum of all observations divided by count: Σx / n",
+      },
+      {
+        key: 'D',
+        label: "Range",
+        subtext: "Difference between maximum and minimum values",
+      },
+    ],
+  },
+  {
+    id: 32,
+    numberStr: '32',
+    indexRef: 'DM-2026-MCQ-049',
+    domain: "Big Data & Hadoop",
+    paradigm: "DISTRIBUTED_SYSTEMS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Scalability means ability to?",
+    options: [
+      {
+        key: 'A',
+        label: "Handle growing workload",
+        subtext: "Accommodate increased volume or users by adding hardware resources",
+      },
+      {
+        key: 'B',
+        label: "Delete files",
+        subtext: "File removal routine",
+      },
+      {
+        key: 'C',
+        label: "Change font size",
+        subtext: "User interface styling",
+      },
+      {
+        key: 'D',
+        label: "Turn off servers",
+        subtext: "Power cycling and shutdown",
+      },
+    ],
+  },
+  {
+    id: 33,
+    numberStr: '33',
+    indexRef: 'DM-2026-MCQ-040',
+    domain: "Data Science & Machine Learning",
+    paradigm: "UNSUPERVISED_REPRESENTATION",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which learning type uses no labels?",
+    options: [
+      {
+        key: 'A',
+        label: "Supervised",
+        subtext: "Trained with ground-truth target label pairs",
+      },
+      {
+        key: 'B',
+        label: "Unsupervised",
+        subtext: "Infers hidden structures and clusters from unlabeled feature distributions",
+      },
+      {
+        key: 'C',
+        label: "Manual",
+        subtext: "Hardcoded human rules",
+      },
+      {
+        key: 'D',
+        label: "Rule-only",
+        subtext: "Static deterministic conditional heuristics",
+      },
+    ],
+  },
+  {
+    id: 34,
+    numberStr: '34',
+    indexRef: 'DM-2026-MCQ-042',
+    domain: "Big Data & Hadoop",
+    paradigm: "DISTRIBUTED_STORAGE",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "HDFS stands for?",
+    options: [
+      {
+        key: 'A',
+        label: "Hadoop Distributed File System",
+        subtext: "Fault-tolerant distributed storage engine designed for cluster scale",
+      },
+      {
+        key: 'B',
+        label: "High Data Format Service",
+        subtext: "Data serialization middleware",
+      },
+      {
+        key: 'C',
+        label: "Hybrid Disk File Setup",
+        subtext: "Storage tiering configuration",
+      },
+      {
+        key: 'D',
+        label: "Hadoop Data Function Store",
+        subtext: "Serverless compute runtime",
+      },
+    ],
+  },
+  {
+    id: 35,
+    numberStr: '35',
+    indexRef: 'DM-2026-MCQ-032',
+    domain: "Data Science & Machine Learning",
+    paradigm: "PREDICTIVE_MODELING",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which task predicts a continuous number?",
+    options: [
+      {
+        key: 'A',
+        label: "Classification",
+        subtext: "Assigns inputs to categorical labels",
+      },
+      {
+        key: 'B',
+        label: "Regression",
+        subtext: "Maps feature vectors to real-valued continuous numerical targets",
+      },
+      {
+        key: 'C',
+        label: "Clustering",
+        subtext: "Partitions unlabelled data into cohesive sub-groups",
+      },
+      {
+        key: 'D',
+        label: "Sorting",
+        subtext: "Arranges records in monotonic order",
+      },
+    ],
+  },
+  {
+    id: 36,
+    numberStr: '36',
+    indexRef: 'DM-2026-MCQ-060',
+    domain: "Cybersecurity & Networks",
+    paradigm: "CRYPTOGRAPHY",
+    difficulty: '0.85 [HARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Encryption converts data into?",
+    options: [
+      {
+        key: 'A',
+        label: "Protected coded form",
+        subtext: "Transforms readable plaintext into unreadable ciphertext via cipher keys",
+      },
+      {
+        key: 'B',
+        label: "A chart",
+        subtext: "Visual diagram presentation",
+      },
+      {
+        key: 'C',
+        label: "A database row",
+        subtext: "Relational table record tuple",
+      },
+      {
+        key: 'D',
+        label: "A larger image",
+        subtext: "Raster resolution upscaling",
+      },
+    ],
+  },
+  {
+    id: 37,
+    numberStr: '37',
+    indexRef: 'DM-2026-MCQ-052',
+    domain: "Cybersecurity & Networks",
+    paradigm: "SECURE_PROTOCOLS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Secure websites commonly use?",
+    options: [
+      {
+        key: 'A',
+        label: "HTTP only",
+        subtext: "Unencrypted cleartext hypertext transfer",
+      },
+      {
+        key: 'B',
+        label: "HTTPS",
+        subtext: "HTTP layered over TLS/SSL encryption and certificate verification",
+      },
+      {
+        key: 'C',
+        label: "FTP only",
+        subtext: "Unencrypted legacy file transfer protocol",
+      },
+      {
+        key: 'D',
+        label: "SMTP only",
+        subtext: "Simple Mail Transfer Protocol for email relay",
+      },
+    ],
+  },
+  {
+    id: 38,
+    numberStr: '38',
+    indexRef: 'DM-2026-MCQ-009',
+    domain: "DBMS & SQL",
+    paradigm: "ORDERING_LOGIC",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which clause sorts query results?",
+    options: [
+      {
+        key: 'A',
+        label: "SORT",
+        subtext: "Non-standard SQL keyword",
+      },
+      {
+        key: 'B',
+        label: "ORDER BY",
+        subtext: "Designates sort columns with ASC or DESC collation",
+      },
+      {
+        key: 'C',
+        label: "GROUP BY",
+        subtext: "Collapses rows into aggregate buckets",
+      },
+      {
+        key: 'D',
+        label: "ARRANGE",
+        subtext: "Spreadsheet or R tidyverse function; not standard SQL",
+      },
+    ],
+  },
+  {
+    id: 39,
+    numberStr: '39',
+    indexRef: 'DM-2026-MCQ-063',
+    domain: "Operating Systems & Architecture",
+    paradigm: "MEMORY_HIERARCHY",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "RAM is mainly used as?",
+    options: [
+      {
+        key: 'A',
+        label: "Temporary working memory",
+        subtext: "Fast volatile workspace for actively executing processes and variables",
+      },
+      {
+        key: 'B',
+        label: "Permanent archive",
+        subtext: "Long-term secondary magnetic or optical storage",
+      },
+      {
+        key: 'C',
+        label: "Printer",
+        subtext: "Output peripheral",
+      },
+      {
+        key: 'D',
+        label: "Router",
+        subtext: "Packet forwarding appliance",
+      },
+    ],
+  },
+  {
+    id: 40,
+    numberStr: '40',
+    indexRef: 'DM-2026-MCQ-025',
+    domain: "Data Analytics & Statistics",
+    paradigm: "FILE_FORMATS",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "CSV commonly stands for?",
+    options: [
+      {
+        key: 'A',
+        label: "Computer Stored Values",
+        subtext: "Generic disk cache term",
+      },
+      {
+        key: 'B',
+        label: "Comma-Separated Values",
+        subtext: "Plain text tabular format using commas as column delimiters",
+      },
+      {
+        key: 'C',
+        label: "Column System View",
+        subtext: "Database schema view terminology",
+      },
+      {
+        key: 'D',
+        label: "Central Source Version",
+        subtext: "Source control version descriptor",
+      },
+    ],
+  },
+  {
+    id: 41,
+    numberStr: '41',
+    indexRef: 'DM-2026-MCQ-061',
+    domain: "Operating Systems & Architecture",
+    paradigm: "SYSTEM_SOFTWARE",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which software manages hardware and apps?",
+    options: [
+      {
+        key: 'A',
+        label: "Operating system",
+        subtext: "Core system kernel managing processor, memory, and I/O devices",
+      },
+      {
+        key: 'B',
+        label: "Web page",
+        subtext: "Client-side rendered hypertext document",
+      },
+      {
+        key: 'C',
+        label: "Spreadsheet",
+        subtext: "End-user calculation workbook",
+      },
+      {
+        key: 'D',
+        label: "SQL table",
+        subtext: "Relational database storage structure",
+      },
+    ],
+  },
+  {
+    id: 42,
+    numberStr: '42',
+    indexRef: 'DM-2026-MCQ-018',
+    domain: "Python & Programming",
+    paradigm: "BOOLEAN_EVALUATION",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which operator checks equality?",
+    options: [
+      {
+        key: 'A',
+        label: "=",
+        subtext: "Variable assignment operator",
+      },
+      {
+        key: 'B',
+        label: "==",
+        subtext: "Relational equality comparison operator returning bool",
+      },
+      {
+        key: 'C',
+        label: "!=",
+        subtext: "Inequality comparison operator",
+      },
+      {
+        key: 'D',
+        label: "=>",
+        subtext: "Fat arrow token in JS/PHP; invalid Python operator",
+      },
+    ],
+  },
+  {
+    id: 43,
+    numberStr: '43',
+    indexRef: 'DM-2026-MCQ-083',
+    domain: "Algorithms & Data Structures",
+    paradigm: "DIVIDE_AND_CONQUER",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which search halves a sorted search range?",
+    options: [
+      {
+        key: 'A',
+        label: "Linear search",
+        subtext: "Scans sequential elements with O(n) worst-case steps",
+      },
+      {
+        key: 'B',
+        label: "Binary search",
+        subtext: "Discards half of the remaining sorted interval per comparison step",
+      },
+      {
+        key: 'C',
+        label: "DFS",
+        subtext: "Depth-first graph traversal searching deep branches first",
+      },
+      {
+        key: 'D',
+        label: "Hashing only",
+        subtext: "Direct address constant-time index mapping",
+      },
+    ],
+  },
+  {
+    id: 44,
+    numberStr: '44',
+    indexRef: 'DM-2026-MCQ-071',
+    domain: "Web, Software Engineering & Cloud",
+    paradigm: "WEB_FOUNDATIONS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "HTML defines a web page's?",
+    options: [
+      {
+        key: 'A',
+        label: "Structure",
+        subtext: "Semantic document skeleton and DOM element hierarchy",
+      },
+      {
+        key: 'B',
+        label: "Database backup",
+        subtext: "Cold snapshot archive file",
+      },
+      {
+        key: 'C',
+        label: "CPU temperature",
+        subtext: "Hardware sensor reading",
+      },
+      {
+        key: 'D',
+        label: "Encryption key",
+        subtext: "Cryptographic secret string",
+      },
+    ],
+  },
+  {
+    id: 45,
+    numberStr: '45',
+    indexRef: 'DM-2026-MCQ-037',
+    domain: "Data Science & Machine Learning",
+    paradigm: "VALIDATION_STRATEGY",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Why keep a test dataset?",
+    options: [
+      {
+        key: 'A',
+        label: "Test on unseen data",
+        subtext: "Provides an unbiased evaluation of model generalization capability",
+      },
+      {
+        key: 'B',
+        label: "Increase file size",
+        subtext: "Storage padding tactic",
+      },
+      {
+        key: 'C',
+        label: "Remove features",
+        subtext: "Dimensionality reduction",
+      },
+      {
+        key: 'D',
+        label: "Avoid saving",
+        subtext: "In-memory ephemeral execution",
+      },
+    ],
+  },
+  {
+    id: 46,
+    numberStr: '46',
+    indexRef: 'DM-2026-MCQ-091',
+    domain: "Databases, Data Tools & SQL",
+    paradigm: "AGGREGATION_GROUPING",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which SQL clause groups rows?",
+    options: [
+      {
+        key: 'A',
+        label: "WHERE",
+        subtext: "Row-level filtering predicate",
+      },
+      {
+        key: 'B',
+        label: "GROUP BY",
+        subtext: "Aggregates rows sharing column values into discrete output sets",
+      },
+      {
+        key: 'C',
+        label: "ORDER BY",
+        subtext: "Sorts output tuples by column values",
+      },
+      {
+        key: 'D',
+        label: "VALUES",
+        subtext: "Specifies literal record data for INSERT statements",
+      },
+    ],
+  },
+  {
+    id: 47,
+    numberStr: '47',
+    indexRef: 'DM-2026-MCQ-081',
+    domain: "Algorithms & Data Structures",
+    paradigm: "STACK_DISCIPLINE",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which structure follows LIFO?",
+    options: [
+      {
+        key: 'A',
+        label: "Queue",
+        subtext: "FIFO (First-In, First-Out) queuing structure",
+      },
+      {
+        key: 'B',
+        label: "Stack",
+        subtext: "Last-In, First-Out sequence where elements push/pop at the top",
+      },
+      {
+        key: 'C',
+        label: "Tree",
+        subtext: "Non-linear hierarchical linked structure",
+      },
+      {
+        key: 'D',
+        label: "Graph",
+        subtext: "Set of vertices interconnected by arbitrary edges",
+      },
+    ],
+  },
+  {
+    id: 48,
+    numberStr: '48',
+    indexRef: 'DM-2026-MCQ-074',
+    domain: "Web, Software Engineering & Cloud",
+    paradigm: "INTEROPERABILITY",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "An API lets software systems?",
+    options: [
+      {
+        key: 'A',
+        label: "Communicate",
+        subtext: "Exchanges requests and payloads via defined programming contracts",
+      },
+      {
+        key: 'B',
+        label: "Cool a CPU",
+        subtext: "Thermal heatsink control",
+      },
+      {
+        key: 'C',
+        label: "Store RAM",
+        subtext: "Physical memory caching",
+      },
+      {
+        key: 'D',
+        label: "Print pages",
+        subtext: "Physical paper printer driver",
+      },
+    ],
+  },
+  {
+    id: 49,
+    numberStr: '49',
+    indexRef: 'DM-2026-MCQ-076',
+    domain: "Web, Software Engineering & Cloud",
+    paradigm: "VERSION_CONTROL",
+    difficulty: '0.60 [MEDIUM]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "Which is a version-control system?",
+    options: [
+      {
+        key: 'A',
+        label: "Git",
+        subtext: "Distributed snapshot repository tracking line-by-line source changes",
+      },
+      {
+        key: 'B',
+        label: "GIF",
+        subtext: "Graphics Interchange Format image file",
+      },
+      {
+        key: 'C',
+        label: "JPG",
+        subtext: "Lossy compressed raster image format",
+      },
+      {
+        key: 'D',
+        label: "SMTP",
+        subtext: "Electronic mail transmission protocol",
+      },
+    ],
+  },
+  {
+    id: 50,
+    numberStr: '50',
+    indexRef: 'DM-2026-MCQ-090',
+    domain: "Algorithms & Data Structures",
+    paradigm: "ALGORITHM_BASICS",
+    difficulty: '0.35 [EASY]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    prompt: "An algorithm is?",
+    options: [
+      {
+        key: 'A',
+        label: "Step-by-step problem-solving procedure",
+        subtext: "Unambiguous finite specification for computing a result",
+      },
+      {
+        key: 'B',
+        label: "Storage device",
+        subtext: "Physical non-volatile hardware media",
+      },
+      {
+        key: 'C',
+        label: "Password",
+        subtext: "Secret authentication token",
+      },
+      {
+        key: 'D',
+        label: "Screen",
+        subtext: "Visual display output unit",
+      },
+    ],
+  },
+];

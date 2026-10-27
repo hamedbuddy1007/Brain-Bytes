@@ -1,0 +1,929 @@
+export interface Round2Option {
+  key: 'A' | 'B' | 'C' | 'D';
+  label: string;
+  subtext?: string;
+}
+
+export interface ChartSeries {
+  name: string;
+  values: number[];
+  color?: string;
+}
+
+export interface ScatterPoint {
+  x: number;
+  y: number;
+  label?: string;
+  isOutlier?: boolean;
+}
+
+export interface Round2ChartData {
+  type: 'bar' | 'line' | 'pie' | 'grouped-bar' | 'multi-line' | 'scatter';
+  title: string;
+  labels?: string[];
+  values?: number[];
+  series?: ChartSeries[];
+  points?: ScatterPoint[];
+  unit?: string;
+  colors?: string[];
+  yMin?: number;
+  yMax?: number;
+  xMin?: number;
+  xMax?: number;
+  xLabel?: string;
+  yLabel?: string;
+}
+
+export interface Round2Question {
+  id: number;
+  numberStr: string;
+  indexRef: string;
+  domain: string;
+  paradigm: string;
+  difficulty: string;
+  marksStr: string;
+  chartType: 'bar' | 'line' | 'pie' | 'grouped-bar' | 'multi-line' | 'scatter';
+  prompt: string;
+  options: Round2Option[];
+  correctAnswer: number; // 0 for A, 1 for B, 2 for C, 3 for D
+  explanation: string;
+  chartData: Round2ChartData;
+}
+
+export const ROUND_2_CONFIG = {
+  roundId: 2,
+  heading: 'BRAIN BYTES   ROUND 2: GRAPH CHALLENGE',
+  roundTitle: 'ROUND 2   GRAPH CHALLENGE',
+  durationSeconds: 10 * 60, // Exactly 10 minutes (600 seconds)
+};
+
+export const ROUND_2_QUESTIONS: Round2Question[] = [
+  {
+    id: 1,
+    numberStr: '01',
+    indexRef: 'DM-2026-GRAPH-001',
+    domain: 'SALES_ANALYTICS',
+    paradigm: 'PERCENTAGE_CHANGE',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which interval has the largest percentage increase?',
+    options: [
+      { key: 'A', label: 'January → February' },
+      { key: 'B', label: 'February → March' },
+      { key: 'C', label: 'March → April' },
+      { key: 'D', label: 'January → April' },
+    ],
+    correctAnswer: 2, // C. March → April
+    explanation: 'March to April rises from 45 to 72, a 60% increase.',
+    chartData: {
+      type: 'bar',
+      title: 'Monthly Sales Volume (Thousands)',
+      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+      values: [40, 50, 45, 72],
+      unit: 'Thousands',
+      colors: ['#8E233B', '#B94B68', '#F59E0B', '#22C55E'],
+    },
+  },
+  {
+    id: 2,
+    numberStr: '02',
+    indexRef: 'DM-2026-GRAPH-002',
+    domain: 'ML_EVALUATION',
+    paradigm: 'OVERFITTING_DETECTION',
+    difficulty: '0.40 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'multi-line',
+    prompt: 'When does the model begin to show overfitting?',
+    options: [
+      { key: 'A', label: 'After epoch 1' },
+      { key: 'B', label: 'After epoch 2' },
+      { key: 'C', label: 'After epoch 4' },
+      { key: 'D', label: 'After epoch 6' },
+    ],
+    correctAnswer: 2, // C. After epoch 4
+    explanation: 'After epoch 4, training accuracy rises while validation accuracy falls.',
+    chartData: {
+      type: 'multi-line',
+      title: 'Training vs Validation Accuracy Across Epochs',
+      labels: ['1', '2', '3', '4', '5', '6'],
+      series: [
+        { name: 'Training accuracy (%)', values: [70, 77, 83, 90, 96, 99], color: '#B94B68' },
+        { name: 'Validation accuracy (%)', values: [68, 75, 82, 89, 83, 76], color: '#3B82F6' },
+      ],
+      unit: '%',
+      yMin: 0,
+      yMax: 100,
+    },
+  },
+  {
+    id: 3,
+    numberStr: '03',
+    indexRef: 'DM-2026-GRAPH-003',
+    domain: 'REGRESSION_DIAGNOSTICS',
+    paradigm: 'OUTLIER_IDENTIFICATION',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'scatter',
+    prompt: 'Identify the outlier: Which point deviates most from the general linear pattern?',
+    options: [
+      { key: 'A', label: '(2, 20)' },
+      { key: 'B', label: '(3, 30)' },
+      { key: 'C', label: '(4, 40)' },
+      { key: 'D', label: '(5, 90)' },
+    ],
+    correctAnswer: 3, // D. (5, 90)
+    explanation: 'The point (5, 90) lies well above the pattern y ≈ 10x.',
+    chartData: {
+      type: 'scatter',
+      title: 'Linear Trend Pattern & Outlier Diagnostics',
+      points: [
+        { x: 1, y: 10, label: '(1, 10)' },
+        { x: 2, y: 20, label: '(2, 20)' },
+        { x: 3, y: 30, label: '(3, 30)' },
+        { x: 4, y: 40, label: '(4, 40)' },
+        { x: 5, y: 90, label: '(5, 90)', isOutlier: true },
+        { x: 6, y: 60, label: '(6, 60)' },
+      ],
+      xLabel: 'X value',
+      yLabel: 'Y value',
+      xMin: 0,
+      xMax: 7,
+      yMin: 0,
+      yMax: 100,
+    },
+  },
+  {
+    id: 4,
+    numberStr: '04',
+    indexRef: 'DM-2026-GRAPH-004',
+    domain: 'COMMERCE_ANALYTICS',
+    paradigm: 'MULTI_CHANNEL_AGGREGATION',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which product has the highest combined sales?',
+    options: [
+      { key: 'A', label: 'Product A' },
+      { key: 'B', label: 'Product B' },
+      { key: 'C', label: 'Product C' },
+      { key: 'D', label: 'Product D' },
+    ],
+    correctAnswer: 2, // C. Product C
+    explanation: 'Product C totals 80 + 30 = 110, the highest.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Online vs In-Store Sales Totals by Product',
+      labels: ['Product A', 'Product B', 'Product C', 'Product D'],
+      series: [
+        { name: 'Online', values: [60, 45, 80, 50], color: '#8E233B' },
+        { name: 'In-store', values: [40, 55, 30, 55], color: '#64748B' },
+      ],
+      unit: 'Sales',
+    },
+  },
+  {
+    id: 5,
+    numberStr: '05',
+    indexRef: 'DM-2026-GRAPH-005',
+    domain: 'DESCRIPTIVE_STATISTICS',
+    paradigm: 'MODAL_INTERVAL',
+    difficulty: '0.25 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which interval contains the most observations?',
+    options: [
+      { key: 'A', label: '20–40' },
+      { key: 'B', label: '40–60' },
+      { key: 'C', label: '60–80' },
+      { key: 'D', label: '80–100' },
+    ],
+    correctAnswer: 2, // C. 60–80
+    explanation: 'The 60–80 interval has the largest frequency, 18.',
+    chartData: {
+      type: 'bar',
+      title: 'Observation Frequency by Interval (Histogram)',
+      labels: ['0–20', '20–40', '40–60', '60–80', '80–100'],
+      values: [2, 5, 12, 18, 13],
+      unit: 'Count',
+      colors: ['#8E233B', '#B94B68', '#F59E0B', '#22C55E', '#3B82F6'],
+    },
+  },
+  {
+    id: 6,
+    numberStr: '06',
+    indexRef: 'DM-2026-GRAPH-006',
+    domain: 'STATISTICAL_CORRELATION',
+    paradigm: 'NEGATIVE_ASSOCIATION',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which pair has the strongest negative correlation?',
+    options: [
+      { key: 'A', label: 'A–C' },
+      { key: 'B', label: 'B–C' },
+      { key: 'C', label: 'C–D' },
+      { key: 'D', label: 'A–D' },
+    ],
+    correctAnswer: 1, // B. B–C
+    explanation: 'B–C has r = −0.42, the most negative coefficient.',
+    chartData: {
+      type: 'bar',
+      title: 'Pairwise Correlation Coefficients (Pearson r)',
+      labels: ['A–C', 'B–C', 'C–D', 'A–D'],
+      values: [-0.25, -0.42, -0.10, 0.32],
+      unit: 'r',
+      yMin: -0.5,
+      yMax: 0.5,
+      colors: ['#EF4444', '#DC2626', '#F87171', '#22C55E'],
+    },
+  },
+  {
+    id: 7,
+    numberStr: '07',
+    indexRef: 'DM-2026-GRAPH-007',
+    domain: 'OPERATIONS_ANALYTICS',
+    paradigm: 'CUMULATIVE_INCREMENT',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'On which day were the most tasks completed?',
+    options: [
+      { key: 'A', label: 'Tuesday' },
+      { key: 'B', label: 'Wednesday' },
+      { key: 'C', label: 'Thursday' },
+      { key: 'D', label: 'Friday' },
+    ],
+    correctAnswer: 2, // C. Thursday
+    explanation: "Daily increases are 15, 12, 19 and 17 after Monday; Thursday's 19 is largest.",
+    chartData: {
+      type: 'line',
+      title: 'Cumulative Completed Tasks Progression (Monday–Friday)',
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      values: [12, 27, 39, 58, 75],
+      unit: 'Tasks',
+    },
+  },
+  {
+    id: 8,
+    numberStr: '08',
+    indexRef: 'DM-2026-GRAPH-008',
+    domain: 'STATISTICAL_DISPERSION',
+    paradigm: 'INTERQUARTILE_RANGE',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which class has the larger interquartile range?',
+    options: [
+      { key: 'A', label: 'Class A' },
+      { key: 'B', label: 'Class B' },
+      { key: 'C', label: 'Both equal' },
+      { key: 'D', label: 'Cannot be determined' },
+    ],
+    correctAnswer: 0, // A. Class A
+    explanation: 'Class A IQR = 80 − 50 = 30; Class B IQR = 75 − 55 = 20.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Quartile Benchmark Comparison (Q1 vs Q3)',
+      labels: ['Class A', 'Class B'],
+      series: [
+        { name: 'Q1', values: [50, 55], color: '#8E233B' },
+        { name: 'Q3', values: [80, 75], color: '#64748B' },
+      ],
+      unit: 'Points',
+    },
+  },
+  {
+    id: 9,
+    numberStr: '09',
+    indexRef: 'DM-2026-GRAPH-009',
+    domain: 'FINANCIAL_ANALYTICS',
+    paradigm: 'PROFIT_MARGIN_RATIO',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which company has the highest profit margin?',
+    options: [
+      { key: 'A', label: 'Company P' },
+      { key: 'B', label: 'Company Q' },
+      { key: 'C', label: 'Company R' },
+      { key: 'D', label: 'Company S' },
+    ],
+    correctAnswer: 1, // B. Company Q
+    explanation: 'Margins: P 20%, Q 30%, R 20%, S 15%; Q is highest.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Company Revenue vs Profit Performance',
+      labels: ['Company P', 'Company Q', 'Company R', 'Company S'],
+      series: [
+        { name: 'Revenue (₹ lakh)', values: [100, 80, 150, 120], color: '#8E233B' },
+        { name: 'Profit (₹ lakh)', values: [20, 24, 30, 18], color: '#64748B' },
+      ],
+      unit: '₹ lakh',
+    },
+  },
+  {
+    id: 10,
+    numberStr: '10',
+    indexRef: 'DM-2026-GRAPH-010',
+    domain: 'ML_METRICS',
+    paradigm: 'RECALL_COMPARISON',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which model has the highest recall?',
+    options: [
+      { key: 'A', label: 'Model A' },
+      { key: 'B', label: 'Model B' },
+      { key: 'C', label: 'Model C' },
+      { key: 'D', label: 'Model D' },
+    ],
+    correctAnswer: 2, // C. Model C
+    explanation: 'Model C recall is 0.95, the highest.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Model Evaluation: Precision vs Recall Comparison',
+      labels: ['Model A', 'Model B', 'Model C', 'Model D'],
+      series: [
+        { name: 'Precision', values: [0.90, 0.82, 0.75, 0.88], color: '#8E233B' },
+        { name: 'Recall', values: [0.60, 0.82, 0.95, 0.70], color: '#64748B' },
+      ],
+      unit: 'Score',
+    },
+  },
+  {
+    id: 11,
+    numberStr: '11',
+    indexRef: 'DM-2026-GRAPH-011',
+    domain: 'DATA_VISUALIZATION',
+    paradigm: 'TRUNCATED_AXIS_BIAS',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'What is misleading about this chart?',
+    options: [
+      { key: 'A', label: 'Q is three times better than P' },
+      { key: 'B', label: 'The truncated axis exaggerates the visual difference' },
+      { key: 'C', label: 'Ratings are mathematically invalid' },
+      { key: 'D', label: 'Both ratings are identical' },
+    ],
+    correctAnswer: 1, // B. The truncated axis exaggerates the visual difference
+    explanation: 'A truncated axis can make a small difference appear much larger.',
+    chartData: {
+      type: 'bar',
+      title: 'Satisfaction Ratings (Truncated Vertical Axis: 90–100)',
+      labels: ['P', 'Q'],
+      values: [92, 95],
+      yMin: 90,
+      yMax: 100,
+      unit: 'Rating',
+      colors: ['#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 12,
+    numberStr: '12',
+    indexRef: 'DM-2026-GRAPH-012',
+    domain: 'TIME_SERIES',
+    paradigm: 'MOVING_AVERAGE',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'Calculate the three-day moving average for Day 5',
+    options: [
+      { key: 'A', label: '120' },
+      { key: 'B', label: '126.7' },
+      { key: 'C', label: '140' },
+      { key: 'D', label: '160' },
+    ],
+    correctAnswer: 1, // B. 126.7
+    explanation: '(80 + 140 + 160) ÷ 3 = 126.7.',
+    chartData: {
+      type: 'line',
+      title: 'Daily Output Volume (Days 1 to 5)',
+      labels: ['1', '2', '3', '4', '5'],
+      values: [100, 120, 80, 140, 160],
+      unit: 'Units',
+    },
+  },
+  {
+    id: 13,
+    numberStr: '13',
+    indexRef: 'DM-2026-GRAPH-013',
+    domain: 'FINANCIAL_ANALYTICS',
+    paradigm: 'SEQUENTIAL_PERCENTAGE_GROWTH',
+    difficulty: '0.40 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'Which quarter has the largest percentage increase from the previous quarter?',
+    options: [
+      { key: 'A', label: 'Q1 → Q2' },
+      { key: 'B', label: 'Q2 → Q3' },
+      { key: 'C', label: 'Q3 → Q4' },
+      { key: 'D', label: 'Q1 → Q4' },
+    ],
+    correctAnswer: 2, // C. Q3 → Q4
+    explanation: 'Q3 to Q4 increases from 234 to 315.9, exactly 35%.',
+    chartData: {
+      type: 'line',
+      title: 'Quarterly Sales Trajectory (Q1–Q4)',
+      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+      values: [200, 260, 234, 315.9],
+      unit: 'Index',
+    },
+  },
+  {
+    id: 14,
+    numberStr: '14',
+    indexRef: 'DM-2026-GRAPH-014',
+    domain: 'EXPERIMENTAL_DESIGN',
+    paradigm: 'PROPORTIONAL_SUCCESS_RATE',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which method has the higher overall success rate?',
+    options: [
+      { key: 'A', label: 'Method A' },
+      { key: 'B', label: 'Method B' },
+      { key: 'C', label: 'Equal rates' },
+      { key: 'D', label: 'Insufficient counts' },
+    ],
+    correctAnswer: 0, // A. Method A
+    explanation: 'A = 100/120 = 83.33%; B = 91/110 = 82.73%.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Success vs Unsuccessful Cases by Method',
+      labels: ['Method A', 'Method B'],
+      series: [
+        { name: 'Successful', values: [100, 91], color: '#8E233B' },
+        { name: 'Unsuccessful', values: [20, 19], color: '#64748B' },
+      ],
+      unit: 'Cases',
+    },
+  },
+  {
+    id: 15,
+    numberStr: '15',
+    indexRef: 'DM-2026-GRAPH-015',
+    domain: 'ML_EVALUATION',
+    paradigm: 'SENSITIVITY_RECALL',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'What is the positive-class recall?',
+    options: [
+      { key: 'A', label: '72%' },
+      { key: 'B', label: '80%' },
+      { key: 'C', label: '85.7%' },
+      { key: 'D', label: '90%' },
+    ],
+    correctAnswer: 1, // B. 80%
+    explanation: '72 ÷ (72 + 18) = 80%.',
+    chartData: {
+      type: 'bar',
+      title: 'Confusion Matrix Frequencies',
+      labels: ['True positive', 'False negative', 'False positive', 'True negative'],
+      values: [72, 18, 10, 100],
+      unit: 'Cases',
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 16,
+    numberStr: '16',
+    indexRef: 'DM-2026-GRAPH-016',
+    domain: 'SIGNAL_PROCESSING',
+    paradigm: 'LOGARITHMIC_SCALING',
+    difficulty: '0.40 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'The vertical axis is logarithmic. By what factor did the signal increase?',
+    options: [
+      { key: 'A', label: '3 times' },
+      { key: 'B', label: '100 times' },
+      { key: 'C', label: '1,000 times' },
+      { key: 'D', label: '100,000 times' },
+    ],
+    correctAnswer: 2, // C. 1,000 times
+    explanation: '100,000 ÷ 100 = 1,000.',
+    chartData: {
+      type: 'line',
+      title: 'Logarithmic Signal Intensity Profile',
+      labels: ['A', 'B', 'C', 'D'],
+      values: [100, 1000, 10000, 100000],
+      unit: 'Signal',
+    },
+  },
+  {
+    id: 17,
+    numberStr: '17',
+    indexRef: 'DM-2026-GRAPH-017',
+    domain: 'CORRELATION_VS_CAUSATION',
+    paradigm: 'BIVARIATE_SCATTER_INTERPRETATION',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'scatter',
+    prompt: 'What conclusion is justified by this scatter plot?',
+    options: [
+      { key: 'A', label: 'Temperature causes every sales increase' },
+      { key: 'B', label: 'Temperature and sales show a positive association' },
+      { key: 'C', label: 'The variables are unrelated' },
+      { key: 'D', label: 'Sales determine temperature' },
+    ],
+    correctAnswer: 1, // B. Temperature and sales show a positive association
+    explanation: 'The points trend upward, indicating positive association, not proof of causation.',
+    chartData: {
+      type: 'scatter',
+      title: 'Ambient Temperature vs Ice-Cream Sales Index',
+      points: [
+        { x: 15, y: 15, label: '(15°C, 15)' },
+        { x: 20, y: 22, label: '(20°C, 22)' },
+        { x: 25, y: 26, label: '(25°C, 26)' },
+        { x: 30, y: 35, label: '(30°C, 35)' },
+        { x: 35, y: 41, label: '(35°C, 41)' },
+        { x: 40, y: 46, label: '(40°C, 46)' },
+        { x: 45, y: 51, label: '(45°C, 51)' },
+      ],
+      xLabel: 'Temperature (°C)',
+      yLabel: 'Sales Index',
+      xMin: 10,
+      xMax: 50,
+      yMin: 0,
+      yMax: 60,
+    },
+  },
+  {
+    id: 18,
+    numberStr: '18',
+    indexRef: 'DM-2026-GRAPH-018',
+    domain: 'WEIGHTED_STATISTICS',
+    paradigm: 'WEIGHTED_ACCURACY',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'What is the combined accuracy across both datasets?',
+    options: [
+      { key: 'A', label: '70%' },
+      { key: 'B', label: '72%' },
+      { key: 'C', label: '80%' },
+      { key: 'D', label: '85%' },
+    ],
+    correctAnswer: 1, // B. 72%
+    explanation: '(100×0.90 + 900×0.70) ÷ 1,000 = 72%.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'Cohort Sample Counts and Subgroup Accuracies',
+      labels: ['Dataset A', 'Dataset B'],
+      series: [
+        { name: 'Sample count', values: [100, 900], color: '#8E233B' },
+        { name: 'Accuracy (%)', values: [90, 70], color: '#64748B' },
+      ],
+      unit: 'Metric',
+    },
+  },
+  {
+    id: 19,
+    numberStr: '19',
+    indexRef: 'DM-2026-GRAPH-019',
+    domain: 'REGRESSION_DIAGNOSTICS',
+    paradigm: 'OUTLIER_RESIDUAL',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'scatter',
+    prompt: 'Which point is most likely to be an outlier?',
+    options: [
+      { key: 'A', label: '(1, 2)' },
+      { key: 'B', label: '(2, 4)' },
+      { key: 'C', label: '(4, 8)' },
+      { key: 'D', label: '(5, 25)' },
+    ],
+    correctAnswer: 3, // D. (5, 25)
+    explanation: '(5, 25) is far above the otherwise linear relationship.',
+    chartData: {
+      type: 'scatter',
+      title: 'Linear Trend y ≈ 2x vs Observed Data Points',
+      points: [
+        { x: 1, y: 2, label: '(1, 2)' },
+        { x: 2, y: 4, label: '(2, 4)' },
+        { x: 3, y: 5.5, label: '(3, 5.5)' },
+        { x: 4, y: 8, label: '(4, 8)' },
+        { x: 5, y: 25, label: '(5, 25)', isOutlier: true },
+      ],
+      xLabel: 'X value',
+      yLabel: 'Y value',
+      xMin: 0,
+      xMax: 6,
+      yMin: 0,
+      yMax: 30,
+    },
+  },
+  {
+    id: 20,
+    numberStr: '20',
+    indexRef: 'DM-2026-GRAPH-020',
+    domain: 'PROBABILITY_DISTRIBUTIONS',
+    paradigm: 'ECDF_QUANTILE',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'Interpret the empirical cumulative distribution function (ECDF): At value 50, the ECDF is 0.75. The dataset contains 200 observations. How many observations are at or below 50?',
+    options: [
+      { key: 'A', label: '75 observations' },
+      { key: 'B', label: '100 observations' },
+      { key: 'C', label: '150 observations' },
+      { key: 'D', label: '175 observations' },
+    ],
+    correctAnswer: 2, // C. 150 observations
+    explanation: '0.75 × 200 = 150 observations are at or below 50.',
+    chartData: {
+      type: 'line',
+      title: 'Empirical Cumulative Distribution Function (ECDF)',
+      labels: ['10', '20', '30', '50', '70', '90'],
+      values: [0.10, 0.30, 0.50, 0.75, 0.90, 1.00],
+      unit: 'F(x)',
+      yMin: 0,
+      yMax: 1.0,
+    },
+  },
+  {
+    id: 21,
+    numberStr: '21',
+    indexRef: 'DM-2026-GRAPH-021',
+    domain: 'QUALITY_CONTROL',
+    paradigm: 'PROCESS_SHIFT_DETECTION',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'Identify the possible process change',
+    options: [
+      { key: 'A', label: 'Defects steadily decreased' },
+      { key: 'B', label: 'A possible shift occurred around Day 5' },
+      { key: 'C', label: 'The process remained completely stable' },
+      { key: 'D', label: 'A six-day cycle is proven' },
+    ],
+    correctAnswer: 1, // B. A possible shift occurred around Day 5
+    explanation: 'The defect rate jumps from about 2% to about 6% around Day 5.',
+    chartData: {
+      type: 'line',
+      title: 'Defect Rate Monitoring Time Series (Days 1–6)',
+      labels: ['1', '2', '3', '4', '5', '6'],
+      values: [1.9, 2.0, 1.8, 1.9, 5.8, 6.1],
+      unit: '%',
+    },
+  },
+  {
+    id: 22,
+    numberStr: '22',
+    indexRef: 'DM-2026-GRAPH-022',
+    domain: 'ML_EVALUATION',
+    paradigm: 'ROC_AUC_RANKING',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which model has the highest area under the ROC curve?',
+    options: [
+      { key: 'A', label: 'Model A' },
+      { key: 'B', label: 'Model B' },
+      { key: 'C', label: 'Model C' },
+      { key: 'D', label: 'Model D' },
+    ],
+    correctAnswer: 0, // A. Model A
+    explanation: 'Model A has AUC 0.91, the highest listed.',
+    chartData: {
+      type: 'bar',
+      title: 'Area Under ROC Curve (AUC) by Model',
+      labels: ['Model A', 'Model B', 'Model C', 'Model D'],
+      values: [0.91, 0.84, 0.76, 0.88],
+      unit: 'AUC',
+      yMin: 0,
+      yMax: 1.0,
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 23,
+    numberStr: '23',
+    indexRef: 'DM-2026-GRAPH-023',
+    domain: 'MODEL_OPTIMIZATION',
+    paradigm: 'LOSS_MINIMIZATION_RMSE',
+    difficulty: '0.25 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which model has the lowest RMSE?',
+    options: [
+      { key: 'A', label: 'Model A' },
+      { key: 'B', label: 'Model B' },
+      { key: 'C', label: 'Model C' },
+      { key: 'D', label: 'Model D' },
+    ],
+    correctAnswer: 2, // C. Model C
+    explanation: 'Model C has RMSE = 5, the lowest.',
+    chartData: {
+      type: 'bar',
+      title: 'Prediction Error: Root Mean Squared Error (RMSE)',
+      labels: ['Model A', 'Model B', 'Model C', 'Model D'],
+      values: [10, 7, 5, 12],
+      unit: 'RMSE',
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 24,
+    numberStr: '24',
+    indexRef: 'DM-2026-GRAPH-024',
+    domain: 'PERFORMANCE_BENCHMARK',
+    paradigm: 'SYSTEM_LATENCY_IQR',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'grouped-bar',
+    prompt: 'Which system has the greater interquartile range?',
+    options: [
+      { key: 'A', label: 'System A' },
+      { key: 'B', label: 'System B' },
+      { key: 'C', label: 'Equal IQR' },
+      { key: 'D', label: 'Cannot be determined' },
+    ],
+    correctAnswer: 1, // B. System B
+    explanation: 'System A IQR = 40; System B IQR = 90.',
+    chartData: {
+      type: 'grouped-bar',
+      title: 'System Latency Distribution Percentiles',
+      labels: ['Q1', 'Median', 'Q3'],
+      series: [
+        { name: 'System A', values: [100, 120, 140], color: '#8E233B' },
+        { name: 'System B', values: [80, 125, 170], color: '#64748B' },
+      ],
+      unit: 'ms',
+    },
+  },
+  {
+    id: 25,
+    numberStr: '25',
+    indexRef: 'DM-2026-GRAPH-025',
+    domain: 'CAUSAL_INFERENCE',
+    paradigm: 'CORRELATION_CAUSATION_FALLACY',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'multi-line',
+    prompt: 'The two series use indices. What can the graph establish?',
+    options: [
+      { key: 'A', label: 'Advertising is proven to cause sales growth' },
+      { key: 'B', label: 'Sales cause advertising growth' },
+      { key: 'C', label: 'Both generally rise, but causation is not established' },
+      { key: 'D', label: 'The variables are unrelated' },
+    ],
+    correctAnswer: 2, // C. Both generally rise, but causation is not established
+    explanation: 'The graph shows a similar trend but cannot by itself establish causation.',
+    chartData: {
+      type: 'multi-line',
+      title: 'Advertising Spend vs Sales Index Over Time',
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+      series: [
+        { name: 'Advertising spend index', values: [20, 35, 52, 68, 80], color: '#8E233B' },
+        { name: 'Sales index', values: [30, 40, 54, 70, 76], color: '#64748B' },
+      ],
+      unit: 'Index',
+    },
+  },
+  {
+    id: 26,
+    numberStr: '26',
+    indexRef: 'DM-2026-GRAPH-026',
+    domain: 'NETWORK_ANALYSIS',
+    paradigm: 'DEGREE_CENTRALITY',
+    difficulty: '0.30 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Find the highest degree centrality',
+    options: [
+      { key: 'A', label: 'Node A' },
+      { key: 'B', label: 'Node C' },
+      { key: 'C', label: 'Node D' },
+      { key: 'D', label: 'Node E' },
+    ],
+    correctAnswer: 0, // A. Node A
+    explanation: 'Node A has degree 4, the highest.',
+    chartData: {
+      type: 'bar',
+      title: 'Undirected Graph Degree Centrality Distribution',
+      labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+      values: [4, 2, 3, 3, 2, 1],
+      unit: 'Degree',
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 27,
+    numberStr: '27',
+    indexRef: 'DM-2026-GRAPH-027',
+    domain: 'GRAPH_ALGORITHMS',
+    paradigm: 'SHORTEST_PATH_DIJKSTRA',
+    difficulty: '0.45 [ADVANCED]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'These are edge weights in a network. Find the shortest total weight from A to E.',
+    options: [
+      { key: 'A', label: '9' },
+      { key: 'B', label: '10' },
+      { key: 'C', label: '12' },
+      { key: 'D', label: '13' },
+    ],
+    correctAnswer: 1, // B. 10
+    explanation: 'A–C–B–D–E has weight 2 + 1 + 5 + 2 = 10.',
+    chartData: {
+      type: 'bar',
+      title: 'Weighted Network Graph Edge Values',
+      labels: ['A–B', 'A–C', 'C–B', 'B–D', 'C–D', 'C–E', 'D–E'],
+      values: [4, 2, 1, 5, 8, 10, 2],
+      unit: 'Weight',
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 28,
+    numberStr: '28',
+    indexRef: 'DM-2026-GRAPH-028',
+    domain: 'MULTIVARIATE_STATISTICS',
+    paradigm: 'MULTICOLLINEARITY_DIAGNOSTICS',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'bar',
+    prompt: 'Which predictor pair has the correlation closest to +1 or −1?',
+    options: [
+      { key: 'A', label: 'X1 and X2' },
+      { key: 'B', label: 'X1 and X3' },
+      { key: 'C', label: 'X2 and X3' },
+      { key: 'D', label: 'X3 and X4' },
+    ],
+    correctAnswer: 0, // A. X1 and X2
+    explanation: 'X1–X2 has r = 0.96, indicating very strong linear association.',
+    chartData: {
+      type: 'bar',
+      title: 'Predictor Pairwise Correlation Coefficients',
+      labels: ['X1–X2', 'X1–X3', 'X2–X3', 'X3–X4'],
+      values: [0.96, 0.20, 0.18, -0.70],
+      unit: 'r',
+      yMin: -1.0,
+      yMax: 1.0,
+      colors: ['#8E233B', '#8E233B', '#8E233B', '#8E233B'],
+    },
+  },
+  {
+    id: 29,
+    numberStr: '29',
+    indexRef: 'DM-2026-GRAPH-029',
+    domain: 'MARKETING_ANALYTICS',
+    paradigm: 'ABSOLUTE_CHANNEL_GROWTH',
+    difficulty: '0.35 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'multi-line',
+    prompt: 'Which traffic source increased the most?',
+    options: [
+      { key: 'A', label: 'Organic' },
+      { key: 'B', label: 'Paid' },
+      { key: 'C', label: 'Referral' },
+      { key: 'D', label: 'Organic and referral equally' },
+    ],
+    correctAnswer: 0, // A. Organic
+    explanation: 'Organic rises by 15; referral rises by 10; paid falls by 5.',
+    chartData: {
+      type: 'multi-line',
+      title: 'Channel Traffic Trends: January to April',
+      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+      series: [
+        { name: 'Organic', values: [40, 45, 50, 55], color: '#8E233B' },
+        { name: 'Paid', values: [20, 25, 20, 15], color: '#64748B' },
+        { name: 'Referral', values: [10, 10, 15, 20], color: '#F59E0B' },
+      ],
+      unit: 'Traffic',
+    },
+  },
+  {
+    id: 30,
+    numberStr: '30',
+    indexRef: 'DM-2026-GRAPH-030',
+    domain: 'ML_EVALUATION',
+    paradigm: 'PRECISION_RECALL_FRONTIER',
+    difficulty: '0.40 [STANDARD]',
+    marksStr: '+1.00 MARK / 0 WRONG',
+    chartType: 'line',
+    prompt: 'The horizontal axis is recall. As recall rises from 0.70 to 0.90, precision falls from 0.78 to 0.60. What does this trade-off demonstrate?',
+    options: [
+      { key: 'A', label: 'More positives are captured, but precision decreases' },
+      { key: 'B', label: 'Fewer positives are captured and precision increases' },
+      { key: 'C', label: 'Both precision and recall increase' },
+      { key: 'D', label: 'False positives and false negatives both become zero' },
+    ],
+    correctAnswer: 0, // A. More positives are captured, but precision decreases
+    explanation: 'Higher recall captures more actual positives, but the lower precision indicates more false positives among positive predictions.',
+    chartData: {
+      type: 'line',
+      title: 'Precision–Recall Trade-Off Curve',
+      labels: ['0.2', '0.4', '0.6', '0.7', '0.8', '0.9'],
+      values: [0.98, 0.94, 0.86, 0.78, 0.68, 0.60],
+      unit: 'Precision',
+      yMin: 0,
+      yMax: 1.0,
+    },
+  },
+];
