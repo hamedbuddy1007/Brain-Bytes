@@ -18,6 +18,39 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roundFilter, setRoundFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [extendingRound, setExtendingRound] = useState<number | null>(null);
+  const [extendToast, setExtendToast] = useState<string | null>(null);
+  const [selectedExtendRound, setSelectedExtendRound] = useState<1 | 2 | 3>(1);
+
+  useEffect(() => {
+    if (!extendToast) return;
+    const t = setTimeout(() => setExtendToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [extendToast]);
+
+  const handleExtendTimeIndividual = async (participantId: string | number, roundId: 1 | 2 | 3, minutes: number) => {
+    if (extendingRound !== null) return;
+    setExtendingRound(roundId);
+    try {
+      const res = await apiRequest<{
+        success: boolean;
+        participantId: number;
+        roundId: number;
+        additionalMinutes: number;
+        message?: string;
+      }>(`/admin/participants/${participantId}/extend-time`, {
+        method: 'POST',
+        body: JSON.stringify({ roundId, additionalMinutes: minutes }),
+      });
+      setExtendToast(res?.message || `Successfully added +${minutes} minute(s) to candidate for Round ${roundId}!`);
+      void loadParticipants();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to extend time.';
+      alert(`Could not extend time: ${msg}`);
+    } finally {
+      setExtendingRound(null);
+    }
+  };
 
   const loadParticipants = useCallback(async () => {
     try {
@@ -365,6 +398,35 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
           </span>
         </div>
       </div>
+
+      {/* Extension Toast Notification */}
+      {extendToast && (
+        <div style={{
+          background: 'rgba(34, 197, 94, 0.15)',
+          border: '1px solid rgba(34, 197, 94, 0.4)',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: '#4ADE80',
+          fontWeight: 600,
+          fontSize: '0.9rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Icon name="check-circle" size={18} />
+            <span>{extendToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExtendToast(null)}
+            style={{ background: 'none', border: 'none', color: '#4ADE80', cursor: 'pointer', fontSize: '1rem' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Table + Optional Side Panel Layout */}
       <div className={`participants-layout-split ${selectedParticipant ? 'has-side-panel' : ''}`}>
@@ -788,6 +850,66 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                           {spR3?.submitted && (
                             <div>Correct: {spR3.solvedCount}/5 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR3.timeTakenSeconds)}</span></div>
                           )}
+                        </div>
+                      </div>
+                      {/* Individual Time Extension Section */}
+                      <div className="side-round-card" style={{ border: '1px solid rgba(56, 189, 248, 0.4)', background: 'rgba(15, 23, 42, 0.5)' }}>
+                        <div className="side-round-card-header" style={{ borderBottom: '1px solid rgba(56, 189, 248, 0.2)', paddingBottom: '6px' }}>
+                          <strong style={{ color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Icon name="clock" size={14} />
+                            <span>Individual Time Extension</span>
+                          </strong>
+                          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>ALL 3 ROUNDS</span>
+                        </div>
+                        <div className="side-round-card-body" style={{ marginTop: '8px' }}>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                            {([1, 2, 3] as const).map((rId) => (
+                              <button
+                                key={rId}
+                                type="button"
+                                onClick={() => setSelectedExtendRound(rId)}
+                                style={{
+                                  flex: 1,
+                                  padding: '4px 6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: selectedExtendRound === rId ? 700 : 500,
+                                  background: selectedExtendRound === rId ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                                  border: `1px solid ${selectedExtendRound === rId ? '#38BDF8' : 'rgba(255, 255, 255, 0.1)'}`,
+                                  color: selectedExtendRound === rId ? '#38BDF8' : '#CBD5E1',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Round {rId}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '8px' }}>
+                            Add extra minutes to active attempt for <strong>Round {selectedExtendRound}</strong>:
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            {[1, 2, 5, 10].map((mins) => (
+                              <button
+                                key={mins}
+                                type="button"
+                                disabled={extendingRound !== null}
+                                onClick={() => handleExtendTimeIndividual(selectedParticipant.id, selectedExtendRound, mins)}
+                                style={{
+                                  flex: 1,
+                                  background: 'rgba(56, 189, 248, 0.15)',
+                                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                                  color: '#38BDF8',
+                                  padding: '5px 4px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: extendingRound !== null ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                {extendingRound === selectedExtendRound ? '...' : `+${mins}m`}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </>

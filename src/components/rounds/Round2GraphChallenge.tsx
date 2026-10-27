@@ -649,9 +649,55 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     onAutoSubmit: handleAutoSubmit,
   });
 
-  // Timer: Exactly 10 minutes (600 seconds), independent from Round 1 & Round 3
+  // Read dynamic configured duration or fallback to default
+  const configuredDurationSeconds = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('bb_admin_durations');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.['2']) return Number(parsed['2']) * 60;
+      }
+    } catch {
+      // fallback
+    }
+    return ROUND_2_CONFIG.durationSeconds;
+  }, []);
+
+  // Periodic polling for active deadline extensions
+  useEffect(() => {
+    if (isSubmitted || !attemptId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await apiRequest<{
+          active: boolean;
+          deadline_at?: string;
+          server_now?: string;
+        }>('/rounds/2/attempts/active-deadline');
+
+        if (res?.active && res.deadline_at) {
+          const newDeadline = new Date(res.deadline_at).getTime();
+          setDeadlineMs((prev) => {
+            if (prev && newDeadline > prev + 1000) {
+              return newDeadline;
+            }
+            return prev || newDeadline;
+          });
+          if (res.server_now) {
+            setClockOffsetMs(new Date(res.server_now).getTime() - Date.now());
+          }
+        }
+      } catch {
+        // network jitter, continue
+      }
+    }, 6000);
+
+    return () => clearInterval(pollInterval);
+  }, [isSubmitted, attemptId]);
+
+  // Timer: dynamic duration + active deadline
   const { formattedTime } = useExamTimer({
-    durationSeconds: ROUND_2_CONFIG.durationSeconds,
+    durationSeconds: configuredDurationSeconds,
     isRunning: !isSubmitted,
     deadlineMs,
     clockOffsetMs,

@@ -333,6 +333,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     }
   };
 
+  const [extendingRound, setExtendingRound] = useState<number | null>(null);
+
   const handleUpdateDuration = (roundId: 1 | 2 | 3, newMinutes: number) => {
     if (newMinutes < 1 || newMinutes > 120) {
       alert('Round duration must be between 1 and 120 minutes.');
@@ -368,9 +370,50 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           '3': nextR3 * 60,
         },
       }),
-    }).catch((err: unknown) => {
-      console.warn('Failed saving duration to server:', err);
-    });
+    })
+      .then(() => {
+        setResetToast({
+          message: `Round ${roundId} default duration successfully updated to ${newMinutes} minutes. Synced to database & active sessions.`,
+          roundId,
+        });
+        if (onLogAudit) {
+          onLogAudit(`Admin updated Round ${roundId} default duration to ${newMinutes} minutes`);
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('Failed saving duration to server:', err);
+        alert(`Failed to save duration: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      });
+  };
+
+  const handleExtendTimeEveryone = async (roundId: 1 | 2 | 3, minutes: number) => {
+    if (extendingRound !== null) return;
+    setExtendingRound(roundId);
+    try {
+      const res = await apiRequest<{
+        success: boolean;
+        roundId: number;
+        additionalMinutes: number;
+        affectedCount: number;
+        message: string;
+      }>(`/admin/rounds/${roundId}/extend-time`, {
+        method: 'POST',
+        body: JSON.stringify({ additionalMinutes: minutes }),
+      });
+      setResetToast({
+        message: res?.message || `Successfully added +${minutes} minute(s) to all active candidates in Round ${roundId}!`,
+        roundId,
+      });
+      if (onLogAudit) {
+        onLogAudit(`Admin extended Round ${roundId} time by +${minutes}m for all active candidates (${res?.affectedCount ?? 0} affected)`);
+      }
+      fetchDbStats();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to extend time.';
+      alert(`Could not extend time: ${msg}`);
+    } finally {
+      setExtendingRound(null);
+    }
   };
 
   const handleGlobalStateChange = (newState: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED') => {
@@ -965,8 +1008,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
         <div className="secondary-controls-grid">
           {/* Duration Editing */}
           <div className="secondary-block">
-            <h4 className="secondary-block-title">Adjust Default Durations</h4>
-            <p className="secondary-block-desc">Modifications apply strictly to new candidate attempts; live sessions preserve timers.</p>
+            <h4 className="secondary-block-title">Adjust Default Durations (Time Limit)</h4>
+            <p className="secondary-block-desc">Configure base duration for each round. Applies to all candidate attempts.</p>
 
             <div className="duration-steppers-list">
               <div className="duration-stepper-row">
@@ -1035,6 +1078,114 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
                   >
                     +
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Extend Time For Everyone (All 3 Rounds) */}
+          <div className="secondary-block" style={{ border: '1px solid rgba(56, 189, 248, 0.35)', background: 'rgba(15, 23, 42, 0.45)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <h4 className="secondary-block-title" style={{ color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Icon name="clock" size={16} />
+                <span>Extend Time For Everyone</span>
+              </h4>
+              <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                ALL 3 ROUNDS
+              </span>
+            </div>
+            <p className="secondary-block-desc">
+              Instantly extends the active exam countdown for <strong>all current unsubmitted participants</strong> in real-time across candidate terminals.
+            </p>
+
+            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Round 1 Extension */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#F1F5F9' }}>Round 1: Data MCQ</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Active: {dbStats?.activeAttempts ?? '—'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[1, 2, 5, 10].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      disabled={extendingRound !== null}
+                      onClick={() => handleExtendTimeEveryone(1, mins)}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
+                        color: '#38BDF8',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: extendingRound !== null ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {extendingRound === 1 ? '...' : `+${mins} Min`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Round 2 Extension */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#F1F5F9' }}>Round 2: Graph Challenge</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Active: {dbStats?.activeAttempts ?? '—'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[1, 2, 5, 10].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      disabled={extendingRound !== null}
+                      onClick={() => handleExtendTimeEveryone(2, mins)}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
+                        color: '#38BDF8',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: extendingRound !== null ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {extendingRound === 2 ? '...' : `+${mins} Min`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Round 3 Extension */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#F1F5F9' }}>Round 3: Rapid Fire</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Active: {dbStats?.activeAttempts ?? '—'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[1, 2, 5, 10].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      disabled={extendingRound !== null}
+                      onClick={() => handleExtendTimeEveryone(3, mins)}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
+                        color: '#38BDF8',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: extendingRound !== null ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {extendingRound === 3 ? '...' : `+${mins} Min`}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

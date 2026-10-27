@@ -530,6 +530,34 @@ router.get('/rounds/:roundId/questions', async (req, res, next) => {
   }
 });
 
+// Participant: Live polling for active attempt deadline (detects admin time extensions in real-time)
+router.get('/rounds/:roundId/attempts/active-deadline', requireAuth('participant'), async (req, res, next) => {
+  try {
+    const roundId = Number(req.params.roundId);
+    if (!roundSchema.safeParse(roundId).success) return res.status(400).json({ error: 'Invalid round.' });
+    const participantId = req.auth.id;
+
+    const result = await query(
+      "SELECT id, deadline_at, (NOW() AT TIME ZONE 'UTC') AS server_now FROM attempts WHERE participant_id = $1 AND round_id = $2 AND submitted_at IS NULL",
+      [participantId, roundId],
+    );
+
+    if (!result.rowCount) {
+      return res.json({ active: false });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      active: true,
+      attemptId: Number(row.id),
+      deadline_at: row.deadline_at,
+      server_now: row.server_now,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/rounds/:roundId/attempts/start', requireAuth('participant'), async (req, res, next) => {
   try {
     const roundId = Number(req.params.roundId);
@@ -1164,6 +1192,127 @@ router.patch('/admin/competition/state', requireAuth('admin'), async (req, res, 
   }
 });
 
+// Admin: Extend time for ALL active candidates in a round
+router.post('/admin/rounds/:roundId/extend-time', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const roundId = Number(req.params.roundId);
+    if (![1, 2, 3].includes(roundId)) {
+      return res.status(400).json({ error: 'Invalid round ID (must be 1, 2, or 3).' });
+    }
+    const body = z.object({
+      additionalMinutes: z.number().int().min(1).max(120),
+    }).safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ error: 'Additional minutes must be an integer between 1 and 120.' });
+    }
+    const { additionalMinutes } = body.data;
+
+    const result = await query(
+      `UPDATE attempts
+       SET deadline_at = GREATEST(NOW(), deadline_at) + ($1 * INTERVAL '1 minute')
+       WHERE round_id = $2 AND submitted_at IS NULL
+       RETURNING id, participant_id, deadline_at`,
+      [additionalMinutes, roundId],
+    );
+
+    await query('UPDATE competition_state SET updated_at = NOW() WHERE singleton = TRUE');
+
+    await query(
+      'INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)',
+      [
+        'admin',
+        req.auth.id,
+        'round.time_extended_all',
+        JSON.stringify({ roundId, additionalMinutes, affectedCount: result.rowCount }),
+      ],
+    );
+
+    res.json({
+      success: true,
+      roundId,
+      additionalMinutes,
+      affectedCount: result.rowCount,
+      message: `Successfully added +${additionalMinutes} minute(s) to ${result.rowCount} active participant(s) in Round ${roundId}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin: Extend time for an individual candidate in a round
+router.post('/admin/participants/:id/extend-time', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const participantId = Number(req.params.id);
+    if (!Number.isSafeInteger(participantId) || participantId < 1) {
+      return res.status(400).json({ error: 'Invalid participant ID.' });
+    }
+    const body = z.object({
+      roundId: z.number().int().min(1).max(3),
+      additionalMinutes: z.number().int().min(1).max(120),
+    }).safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ error: 'Provide valid roundId (1-3) and additionalMinutes (1-120).' });
+    }
+    const { roundId, additionalMinutes } = body.data;
+
+    const partCheck = await query('SELECT id, full_name, roll_number FROM participants WHERE id = $1', [participantId]);
+    if (!partCheck.rowCount) {
+      return res.status(404).json({ error: 'Participant not found.' });
+    }
+    const participant = partCheck.rows[0];
+
+    const result = await query(
+      `UPDATE attempts
+       SET deadline_at = GREATEST(NOW(), deadline_at) + ($1 * INTERVAL '1 minute')
+       WHERE participant_id = $2 AND round_id = $3 AND submitted_at IS NULL
+       RETURNING id, participant_id, round_id, deadline_at`,
+      [additionalMinutes, participantId, roundId],
+    );
+
+    if (result.rowCount === 0) {
+      const submittedCheck = await query(
+        'SELECT id, submitted_at FROM attempts WHERE participant_id = $1 AND round_id = $2',
+        [participantId, roundId],
+      );
+      if (submittedCheck.rowCount && submittedCheck.rows[0].submitted_at) {
+        return res.status(400).json({
+          error: `Participant ${participant.roll_number} has already submitted Round ${roundId}. Time cannot be added to completed attempts.`,
+        });
+      }
+      return res.status(404).json({
+        error: `No active attempt found for candidate ${participant.roll_number} in Round ${roundId}. The candidate must start Round ${roundId} first.`,
+      });
+    }
+
+    await query(
+      'INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)',
+      [
+        'admin',
+        req.auth.id,
+        'attempt.time_extended',
+        JSON.stringify({
+          participantId,
+          rollNumber: participant.roll_number,
+          roundId,
+          additionalMinutes,
+          newDeadline: result.rows[0].deadline_at,
+        }),
+      ],
+    );
+
+    res.json({
+      success: true,
+      participantId,
+      roundId,
+      additionalMinutes,
+      newDeadline: result.rows[0].deadline_at,
+      message: `Successfully added +${additionalMinutes} minute(s) to ${participant.full_name} (${participant.roll_number}) for Round ${roundId}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, next) => {
   try {
     const roundId = Number(req.params.roundId);
@@ -1327,6 +1476,7 @@ router.post('/admin/rounds/:roundId/reset', requireAuth('admin'), async (req, re
 
     await withTransaction(async (client) => {
       const deletedAttempts = await client.query('DELETE FROM attempts WHERE round_id = $1 RETURNING id', [roundId]);
+      await client.query('DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE round_id = $1)', [roundId]);
       const eventType = `round${roundId + 1}.qualified`;
       await client.query('DELETE FROM audit_events WHERE event_type=$1', [eventType]);
       await client.query("DELETE FROM audit_events WHERE event_type='qualification.executed' AND details->>'sourceRound'=$1", [String(roundId)]);

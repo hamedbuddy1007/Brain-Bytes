@@ -642,9 +642,55 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     onAutoSubmit: handleAutoSubmit,
   });
 
-  // Timer: Exactly 10 minutes (600 seconds)
+  // Read dynamic configured duration or fallback to default
+  const configuredDurationSeconds = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('bb_admin_durations');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.['1']) return Number(parsed['1']) * 60;
+      }
+    } catch {
+      // fallback
+    }
+    return 10 * 60;
+  }, []);
+
+  // Periodic polling for active deadline extensions
+  useEffect(() => {
+    if (isSubmitted || !attemptId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await apiRequest<{
+          active: boolean;
+          deadline_at?: string;
+          server_now?: string;
+        }>('/rounds/1/attempts/active-deadline');
+
+        if (res?.active && res.deadline_at) {
+          const newDeadline = new Date(res.deadline_at).getTime();
+          setDeadlineMs((prev) => {
+            if (prev && newDeadline > prev + 1000) {
+              return newDeadline;
+            }
+            return prev || newDeadline;
+          });
+          if (res.server_now) {
+            setClockOffsetMs(new Date(res.server_now).getTime() - Date.now());
+          }
+        }
+      } catch {
+        // network jitter, continue
+      }
+    }, 6000);
+
+    return () => clearInterval(pollInterval);
+  }, [isSubmitted, attemptId]);
+
+  // Timer: dynamic duration + active deadline
   const { formattedTime } = useExamTimer({
-    durationSeconds: 10 * 60,
+    durationSeconds: configuredDurationSeconds,
     isRunning: !isSubmitted,
     deadlineMs,
     clockOffsetMs,

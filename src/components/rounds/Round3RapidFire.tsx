@@ -48,6 +48,9 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(() => {
     if (!participantKey) return {};
     try {
+      const savedAttemptId = localStorage.getItem(`bb_attempt_id_r3_${participantKey}`);
+      // Only restore previous local answers if there was an established ongoing attempt ID
+      if (!savedAttemptId) return {};
       const saved = localStorage.getItem(`bb_answers_r3_${participantKey}`);
       return saved ? JSON.parse(saved) : {};
     } catch {
@@ -326,8 +329,8 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
             ? localStorage.getItem(`bb_attempt_id_r3_${participantKey}`)
             : null;
 
-          // If attempt ID changed (e.g. after round reset or purge), discard stale answers
-          if (savedAttemptId && savedAttemptId !== String(attempt.id)) {
+          // If attempt ID changed or is newly started, discard any stale answers
+          if (!savedAttemptId || savedAttemptId !== String(attempt.id)) {
             setSelectedAnswers({});
             setMarkedForReview(new Set());
             if (participantKey) {
@@ -647,9 +650,55 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
     onAutoSubmit: handleAutoSubmit,
   });
 
-  // Timer: Exactly 3 minutes (180 seconds), independent from Round 1 & Round 2
+  // Read dynamic configured duration or fallback to default
+  const configuredDurationSeconds = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('bb_admin_durations');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.['3']) return Number(parsed['3']) * 60;
+      }
+    } catch {
+      // fallback
+    }
+    return ROUND_3_CONFIG.durationSeconds;
+  }, []);
+
+  // Periodic polling for active deadline extensions
+  useEffect(() => {
+    if (isSubmitted || !attemptId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await apiRequest<{
+          active: boolean;
+          deadline_at?: string;
+          server_now?: string;
+        }>('/rounds/3/attempts/active-deadline');
+
+        if (res?.active && res.deadline_at) {
+          const newDeadline = new Date(res.deadline_at).getTime();
+          setDeadlineMs((prev) => {
+            if (prev && newDeadline > prev + 1000) {
+              return newDeadline;
+            }
+            return prev || newDeadline;
+          });
+          if (res.server_now) {
+            setClockOffsetMs(new Date(res.server_now).getTime() - Date.now());
+          }
+        }
+      } catch {
+        // network jitter, continue
+      }
+    }, 6000);
+
+    return () => clearInterval(pollInterval);
+  }, [isSubmitted, attemptId]);
+
+  // Timer: dynamic duration + active deadline
   const { formattedTime } = useExamTimer({
-    durationSeconds: ROUND_3_CONFIG.durationSeconds,
+    durationSeconds: configuredDurationSeconds,
     isRunning: !isSubmitted,
     deadlineMs,
     clockOffsetMs,
@@ -715,6 +764,21 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
       delete next[qId];
       return next;
     });
+  };
+
+  // Clear all responses in Round 3
+  const handleClearAllResponses = () => {
+    if (isSubmitted) return;
+    if (window.confirm('Clear all your selected answers for Round 3?')) {
+      setSelectedAnswers({});
+      if (participantKey) {
+        try {
+          localStorage.removeItem(`bb_answers_r3_${participantKey}`);
+        } catch {
+          // ignore
+        }
+      }
+    }
   };
 
   // Toggle Mark for Review
@@ -1308,6 +1372,18 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
               >
                 <Icon name="close" size={14} />
                 <span>CLEAR RESPONSE</span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-clear-all-r3"
+                className="btn-terminal-action btn-clear-choice"
+                onClick={handleClearAllResponses}
+                disabled={answeredCount === 0}
+                title="Clear all responses across all questions in Round 3"
+              >
+                <Icon name="refresh" size={14} />
+                <span>CLEAR ALL</span>
               </button>
 
               <button
