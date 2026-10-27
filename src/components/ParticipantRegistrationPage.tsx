@@ -19,9 +19,9 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
   // Always initialize with fresh, completely empty values on every new registration
   const [fullName, setFullName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
-  const [department, setDepartment] = useState('CSE');
-  const [yearOfStudy, setYearOfStudy] = useState('1st Year');
-  const [collegeName, setCollegeName] = useState('Department of Technical Education');
+  const [department, setDepartment] = useState('');
+  const [yearOfStudy, setYearOfStudy] = useState('');
+  const [collegeName, setCollegeName] = useState('');
 
   const [step, setStep] = useState<RegistrationStep>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +83,14 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
     }
     if (!trimmedRoll || trimmedRoll.length < 1) {
       setErrorMessage('Please enter your valid Roll Number / Hall Ticket ID.');
+      return;
+    }
+    if (!department) {
+      setErrorMessage('Please select your department.');
+      return;
+    }
+    if (!yearOfStudy) {
+      setErrorMessage('Please select your year of study.');
       return;
     }
 
@@ -187,7 +195,7 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     id="reg-full-name"
                     type="text"
                     required
-                    placeholder="e.g. John Doe"
+                    placeholder="Enter your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="reg-input"
@@ -207,7 +215,7 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     id="reg-roll-number"
                     type="text"
                     required
-                    placeholder="e.g. 23B91A0501"
+                    placeholder="Enter roll number / hall ticket ID"
                     value={rollNumber}
                     onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
                     className="reg-input uppercase-text"
@@ -225,10 +233,14 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     <Icon name="book" size={17} className="reg-input-icon" />
                     <select
                       id="reg-dept"
+                      required
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
                       className="reg-select"
                     >
+                      <option value="" disabled>
+                        Select Department
+                      </option>
                       {DEPARTMENTS.map((dept) => (
                         <option key={dept} value={dept}>
                           {dept}
@@ -246,10 +258,14 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     <Icon name="calendar" size={17} className="reg-input-icon" />
                     <select
                       id="reg-year"
+                      required
                       value={yearOfStudy}
                       onChange={(e) => setYearOfStudy(e.target.value)}
                       className="reg-select"
                     >
+                      <option value="" disabled>
+                        Select Year of Study
+                      </option>
                       {YEARS.map((yr) => (
                         <option key={yr} value={yr}>
                           {yr}
@@ -270,7 +286,7 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                   <input
                     id="reg-college"
                     type="text"
-                    placeholder="e.g. Department of Technical Education"
+                    placeholder="Enter institution / college name"
                     value={collegeName}
                     onChange={(e) => setCollegeName(e.target.value)}
                     className="reg-input"

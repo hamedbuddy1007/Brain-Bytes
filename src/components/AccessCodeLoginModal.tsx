@@ -41,7 +41,7 @@ export const AccessCodeLoginModal: React.FC<AccessCodeLoginModalProps> = ({
 
     const trimmed = accessCode.trim().toUpperCase();
     if (!trimmed) {
-      setErrorMessage('Please enter your Access Code (e.g. BB-XXXX).');
+      setErrorMessage('Please enter your unique Access Code.');
       return;
     }
 
@@ -123,7 +123,7 @@ export const AccessCodeLoginModal: React.FC<AccessCodeLoginModalProps> = ({
                 id="input-access-code"
                 type="text"
                 required
-                placeholder="BB-XXXX"
+                placeholder="Enter Access Code"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 className="field-input-control uppercase-text monospace-font code-input-field"
@@ -132,7 +132,7 @@ export const AccessCodeLoginModal: React.FC<AccessCodeLoginModalProps> = ({
               />
             </div>
             <span className="field-hint-text">
-              Example format: <code className="hint-code">BB-XXXX</code>
+              Enter the unique access code issued upon registration approval.
             </span>
           </div>
 

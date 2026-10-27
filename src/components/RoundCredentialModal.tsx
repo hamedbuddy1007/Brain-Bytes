@@ -24,8 +24,8 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
 }) => {
   const [fullName, setFullName] = useState(existingParticipant?.fullName || '');
   const [rollNumber, setRollNumber] = useState(existingParticipant?.rollNumber || '');
-  const [department, setDepartment] = useState(existingParticipant?.department || 'CSE');
-  const [yearOfStudy, setYearOfStudy] = useState(existingParticipant?.yearOfStudy || '1st Year');
+  const [department, setDepartment] = useState(existingParticipant?.department || '');
+  const [yearOfStudy, setYearOfStudy] = useState(existingParticipant?.yearOfStudy || '');
   const [joinCode, setJoinCode] = useState(existingParticipant?.joinCode || '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -261,6 +261,9 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
               disabled={isSubmitting}
               required
             >
+              <option value="" disabled>
+                Select Department
+              </option>
               <option value="CSE">CSE — Computer Science & Engineering</option>
               <option value="CSM">CSM — Artificial Intelligence & Machine Learning</option>
               <option value="CSD">CSD — Data Science</option>
@@ -283,6 +286,9 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
               disabled={isSubmitting}
               required
             >
+              <option value="" disabled>
+                Select Year of Study
+              </option>
               <option value="1st Year">1st Year</option>
               <option value="2nd Year">2nd Year</option>
               <option value="3rd Year">3rd Year</option>

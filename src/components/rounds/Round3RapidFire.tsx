@@ -1395,7 +1395,7 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
                   <div style={{ background: 'rgba(255, 107, 0, 0.1)', border: '1px solid rgba(255, 107, 0, 0.3)', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input
                       type="text"
-                      placeholder="Event Join Code (e.g. BYTE2026)"
+                      placeholder="Enter Access Code"
                       value={reauthCode}
                       onChange={(e) => setReauthCode(e.target.value.toUpperCase())}
                       style={{ flex: 1, background: '#1c1b1f', border: '1px solid #414047', color: '#fff', borderRadius: '6px', padding: '8px 12px', fontSize: '0.88rem' }}

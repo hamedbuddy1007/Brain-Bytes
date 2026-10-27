@@ -88,7 +88,7 @@ const participantRegisterSchema = z.object({
   rollNumber: z.string().trim().min(1).max(50),
   department: z.string().trim().min(1).max(60).optional(),
   yearOfStudy: z.string().trim().min(1).max(30).optional(),
-  collegeName: z.string().trim().min(2).max(160).optional(),
+  collegeName: z.string().trim().max(160).optional(),
 });
 
 router.get('/health', async (_req, res) => {
