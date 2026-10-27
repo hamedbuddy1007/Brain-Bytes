@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ParticipantLandingPage } from './components/ParticipantLandingPage';
+import { HomePage } from './components/HomePage';
+import { CompetitionArenaPage } from './components/CompetitionArenaPage';
 import { ParticipantRegistrationPage } from './components/ParticipantRegistrationPage';
 import { AccessCodeLoginModal } from './components/AccessCodeLoginModal';
 import { ArenaTransitionOverlay } from './components/ArenaTransitionOverlay';
@@ -27,7 +28,7 @@ import {
 import { apiRequest } from './services/apiClient';
 import './App.css';
 
-type AppView = 'landing' | 'register' | 'round-1' | 'round-2' | 'round-3' | 'admin' | 'projector';
+type AppView = 'home' | 'arena' | 'register' | 'round-1' | 'round-2' | 'round-3' | 'admin' | 'projector';
 
 export function App() {
   // Determine initial view from URL path or hash
@@ -44,6 +45,9 @@ export function App() {
     if (path === '/register' || hash.includes('register')) {
       return 'register';
     }
+    if (path === '/arena' || hash.includes('arena')) {
+      return 'arena';
+    }
 
     // A participant session is required to open any competition round directly
     const participant = getActiveParticipant();
@@ -51,7 +55,7 @@ export function App() {
       if (typeof window !== 'undefined' && (hash.includes('round-') || path.includes('/round-'))) {
         window.history.replaceState(null, '', '#/');
       }
-      return 'landing';
+      return 'home';
     }
 
     if (hash.includes('round-1') || path.includes('/round-1')) {
@@ -63,7 +67,7 @@ export function App() {
     if (hash.includes('round-3') || path.includes('/round-3')) {
       return 'round-3';
     }
-    return 'landing';
+    return 'home';
   };
 
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
@@ -116,16 +120,16 @@ export function App() {
           setActiveParticipantState(p);
           persistActiveParticipant(p);
 
-          // If participant is on round-2/round-3 but has not submitted the prerequisite round, redirect to landing
+          // If participant is on round-2/round-3 but has not submitted the prerequisite round, redirect to arena
           const hasR1 = p.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
           const hasR2 = p.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
 
           if (currentView === 'round-2' && !hasR1) {
-            setCurrentView('landing');
-            window.history.replaceState(null, '', '#/');
+            setCurrentView('arena');
+            window.history.replaceState(null, '', '#/arena');
           } else if (currentView === 'round-3' && !hasR2) {
-            setCurrentView('landing');
-            window.history.replaceState(null, '', '#/');
+            setCurrentView('arena');
+            window.history.replaceState(null, '', '#/arena');
           }
         } else {
           setActiveParticipantState(null);
@@ -134,7 +138,7 @@ export function App() {
             sessionStorage.removeItem('bb_active_participant');
           } catch {}
           if (currentView.startsWith('round-')) {
-            setCurrentView('landing');
+            setCurrentView('home');
             window.history.replaceState(null, '', '#/');
           }
         }
@@ -148,7 +152,7 @@ export function App() {
           sessionStorage.removeItem('bb_active_participant');
         } catch {}
         if (currentView.startsWith('round-')) {
-          setCurrentView('landing');
+          setCurrentView('home');
           window.history.replaceState(null, '', '#/');
         }
       });
@@ -262,14 +266,18 @@ export function App() {
         setCurrentView('admin');
       } else if (path === '/register' || hash.includes('register')) {
         setCurrentView('register');
+      } else if (path === '/arena' || hash.includes('arena')) {
+        setCurrentView('arena');
       } else if (hash.includes('round-1')) {
         setCurrentView('round-1');
       } else if (hash.includes('round-2')) {
         setCurrentView('round-2');
       } else if (hash.includes('round-3')) {
         setCurrentView('round-3');
+      } else if (hash === '#/' || hash === '' || path === '/') {
+        setCurrentView('home');
       } else if (currentView === 'admin' || currentView === 'projector' || currentView === 'register') {
-        setCurrentView('landing');
+        setCurrentView('home');
       }
     };
 
@@ -289,13 +297,15 @@ export function App() {
       window.history.pushState(null, '', '#/projector');
     } else if (view === 'register') {
       window.history.pushState(null, '', '#/register');
+    } else if (view === 'arena') {
+      window.history.pushState(null, '', '#/arena');
     } else if (view === 'round-1') {
       window.history.pushState(null, '', '#/round-1');
     } else if (view === 'round-2') {
       window.history.pushState(null, '', '#/round-2');
     } else if (view === 'round-3') {
       window.history.pushState(null, '', '#/round-3');
-    } else if (view === 'landing') {
+    } else if (view === 'home') {
       window.history.pushState(null, '', window.location.pathname === '/admin' ? '/' : '#/');
     }
   };
@@ -328,7 +338,7 @@ export function App() {
 
     const targetStatus = settings.roundStates[roundId] || 'locked';
     if (targetStatus === 'locked') {
-      navigateToView('landing');
+      navigateToView('arena');
       return;
     }
 
@@ -338,27 +348,34 @@ export function App() {
       navigateToView('round-2');
     } else if (roundId === 3) {
       navigateToView('round-3');
+    } else {
+      navigateToView('arena');
     }
   };
 
-  // Enforce access control: derive effective view so locked rounds or unverified sessions fallback to landing
+  // Enforce access control: derive effective view so locked rounds or unverified sessions fallback to arena / home
   const effectiveView: AppView = (() => {
+    if (currentView === 'home') return 'home';
+    if (currentView === 'arena') return 'arena';
     if (currentView === 'register') return 'register';
+    if (currentView === 'admin') return 'admin';
+    if (currentView === 'projector') return 'projector';
+
     if (currentView === 'round-1' && (settings.roundStates[1] === 'locked' || !activeParticipant)) {
-      return 'landing';
+      return 'arena';
     }
     if (currentView === 'round-2') {
-      if (settings.roundStates[2] === 'locked' || !activeParticipant) return 'landing';
+      if (settings.roundStates[2] === 'locked' || !activeParticipant) return 'arena';
       const hasR1 = activeParticipant.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
       if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR1) {
-        return 'landing';
+        return 'arena';
       }
     }
     if (currentView === 'round-3') {
-      if (settings.roundStates[3] === 'locked' || !activeParticipant) return 'landing';
+      if (settings.roundStates[3] === 'locked' || !activeParticipant) return 'arena';
       const hasR2 = activeParticipant.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
       if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR2) {
-        return 'landing';
+        return 'arena';
       }
     }
     return currentView;
@@ -411,60 +428,72 @@ export function App() {
         </div>
       )}
 
-      {/* 1. PARTICIPANT LANDING PAGE */}
-      {effectiveView === 'landing' && (
-        <ParticipantLandingPage
+      {/* 1. CLEAN HOMEPAGE WITH ROUNDS INTRODUCTION AND REGISTER/LOGIN/ADMIN BUTTONS */}
+      {effectiveView === 'home' && (
+        <HomePage
           roundStates={settings.roundStates}
           isRegistrationOpen={settings.isRegistrationOpen}
-          onSelectRound={handleSelectRoundCard}
-          onOpenAdmin={() => navigateToView('admin')}
+          activeParticipant={activeParticipant}
           onOpenRegister={() => navigateToView('register')}
+          onOpenLogin={() => setSelectedRoundForCredentials(1)}
+          onOpenAdmin={() => navigateToView('admin')}
+          onEnterArena={() => navigateToView('arena')}
         />
       )}
 
-      {/* 2. DEDICATED PARTICIPANT REGISTRATION PAGE */}
+      {/* 2. DEDICATED ARENA PAGE WITH ONLY TABS TO THE GAME PAGES */}
+      {effectiveView === 'arena' && (
+        <CompetitionArenaPage
+          roundStates={settings.roundStates}
+          activeParticipant={activeParticipant}
+          onSelectRound={handleSelectRoundCard}
+          onBackToHome={() => navigateToView('home')}
+        />
+      )}
+
+      {/* 3. DEDICATED PARTICIPANT REGISTRATION PAGE */}
       {effectiveView === 'register' && (
         <ParticipantRegistrationPage
-          onBackToHome={() => navigateToView('landing')}
+          onBackToHome={() => navigateToView('home')}
           onProceedToArena={(code) => {
             setPrefilledAccessCode(code);
-            navigateToView('landing');
+            navigateToView('arena');
             setSelectedRoundForCredentials(1);
           }}
         />
       )}
 
-      {/* 3. DEDICATED ROUND 1 COMPETITION PAGE (Data MCQ) */}
+      {/* 4. DEDICATED ROUND 1 COMPETITION PAGE (Data MCQ) */}
       {effectiveView === 'round-1' && (
         <Round1MCQ
           participant={activeParticipant}
-          onExit={() => navigateToView('landing')}
+          onExit={() => navigateToView('arena')}
           onRecordScore={handleRecordRoundScore}
           onProceedToNextRound={() => navigateToView('round-2')}
         />
       )}
 
-      {/* 4. DEDICATED ROUND 2 COMPETITION PAGE (Graph Challenge) */}
+      {/* 5. DEDICATED ROUND 2 COMPETITION PAGE (Graph Challenge) */}
       {effectiveView === 'round-2' && (
         <Round2GraphChallenge
           participant={activeParticipant}
-          onExit={() => navigateToView('landing')}
+          onExit={() => navigateToView('arena')}
           onRecordScore={handleRecordRoundScore}
           onProceedToNextRound={() => navigateToView('round-3')}
         />
       )}
 
-      {/* 5. DEDICATED ROUND 3 COMPETITION PAGE (Rapid Fire) */}
+      {/* 6. DEDICATED ROUND 3 COMPETITION PAGE (Rapid Fire) */}
       {effectiveView === 'round-3' && (
         <Round3RapidFire
           participant={activeParticipant}
-          onExit={() => navigateToView('landing')}
+          onExit={() => navigateToView('arena')}
           onRecordScore={handleRecordRoundScore}
           onOpenProjector={() => navigateToView('projector')}
         />
       )}
 
-      {/* 6. ADMIN INTERFACE (Protected by AdminSecurityGate) */}
+      {/* 7. ADMIN INTERFACE (Protected by AdminSecurityGate) */}
       {effectiveView === 'admin' && (
         <AdminSecurityGate
           isAuthenticated={isAdminAuthenticated}
@@ -473,14 +502,14 @@ export function App() {
             setIsAdminAuthenticated(true);
             setIsVerifyingAdminSession(false);
           }}
-          onReturnToLanding={() => navigateToView('landing')}
+          onReturnToLanding={() => navigateToView('home')}
         >
           <AdminDashboard
             settings={settings}
             onUpdateSettings={setSettings}
             onResetParticipants={handleResetParticipants}
             onResetRounds={handleResetRounds}
-            onReturnToArena={() => navigateToView('landing')}
+            onReturnToArena={() => navigateToView('arena')}
             onOpenProjector={() => navigateToView('projector')}
             onSignOut={async () => {
               await terminateAdminSession();
@@ -492,10 +521,10 @@ export function App() {
         </AdminSecurityGate>
       )}
 
-      {/* 7. PROJECTOR SCOREBOARD */}
+      {/* 8. PROJECTOR SCOREBOARD */}
       {effectiveView === 'projector' && (
         <ProjectorLeaderboard
-          onReturnToArena={() => navigateToView('landing')}
+          onReturnToArena={() => navigateToView('home')}
           onOpenAdmin={() => navigateToView('admin')}
         />
       )}
