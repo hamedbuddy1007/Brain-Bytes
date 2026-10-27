@@ -8,6 +8,8 @@ export interface Participant {
   rollNumber: string;
   department?: string;
   yearOfStudy?: string;
+  accessCode?: string;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   joinCode?: string;
   registeredAt: string;
   ticketId: string;
@@ -140,6 +142,10 @@ export interface RegistryParticipant {
   initials: string;
   name: string;
   campus: string;
+  department?: string;
+  yearOfStudy?: string;
+  accessCode?: string;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   rollNumber: string;
   node: string;
   round: string;

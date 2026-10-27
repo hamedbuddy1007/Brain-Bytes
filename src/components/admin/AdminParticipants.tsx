@@ -96,6 +96,59 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
     setSelectedId((prev) => (prev === id ? null : id));
   };
 
+  const handleApproveParticipant = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    try {
+      const res = await apiRequest<{ success: boolean; participant: { id: number; access_code: string; approval_status: string } }>(
+        `/admin/participants/${id}/approve`,
+        { method: 'POST' }
+      );
+      if (res?.success) {
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.id === id ? { ...p, approvalStatus: 'APPROVED', accessCode: res.participant.access_code } : p
+          )
+        );
+      }
+    } catch (err) {
+      alert(`Failed to approve participant: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRejectParticipant = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!window.confirm('Are you sure you want to reject this participant registration?')) return;
+    try {
+      const res = await apiRequest<{ success: boolean }>(`/admin/participants/${id}/reject`, { method: 'POST' });
+      if (res?.success) {
+        setParticipants((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, approvalStatus: 'REJECTED' } : p))
+        );
+      }
+    } catch (err) {
+      alert(`Failed to reject participant: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleApproveAll = async () => {
+    const pendingCount = participants.filter((p) => (p.approvalStatus || 'PENDING') === 'PENDING').length;
+    if (pendingCount === 0) {
+      alert('There are no pending participant registrations to approve.');
+      return;
+    }
+    if (!window.confirm(`Approve all ${pendingCount} pending participant registrations? Access codes will be issued to their screens.`)) {
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await apiRequest('/admin/participants/approve-all', { method: 'POST' });
+      await loadParticipants();
+    } catch (err) {
+      alert(`Failed to approve all participants: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setIsLoading(false);
+    }
+  };
+
   const handleResetAttemptsKeepParticipants = async () => {
     if (window.confirm('RESET ALL ATTEMPTS: Are you sure you want to reset all round attempts? Registered participants will remain in the database, but all round scores and attempt answers will be cleared so they can take the rounds again.')) {
       try {
@@ -137,6 +190,26 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
           <p className="screen-subtitle">Authoritative Neon PostgreSQL participant registry & live round submissions</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleApproveAll}
+            disabled={isLoading}
+            style={{
+              borderColor: '#16A34A',
+              color: '#22C55E',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+            }}
+            title="Approve all waiting registrations and issue access codes"
+          >
+            <Icon name="check-circle" size={14} />
+            <span>Approve All Pending {participants.filter((p) => (p.approvalStatus || 'PENDING') === 'PENDING').length > 0 ? `(${participants.filter((p) => (p.approvalStatus || 'PENDING') === 'PENDING').length})` : ''}</span>
+          </button>
+
           <button
             type="button"
             className="btn btn-secondary"
@@ -308,16 +381,17 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                 <tr>
                   <th>Candidate</th>
                   <th>Roll Number</th>
-                  <th>Department / Year</th>
+                  <th>Dept / Year</th>
+                  <th>Access Code</th>
+                  <th>Approval Status</th>
                   <th>Round Progress (R1 / R2 / R3)</th>
                   <th>Score</th>
-                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                         <Icon name="refresh" size={16} />
                         <span>Querying Neon PostgreSQL participants...</span>
@@ -326,13 +400,13 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                   </tr>
                 ) : filteredList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
                       {participants.length === 0 ? (
                         <div>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                             No participants registered yet in Neon PostgreSQL database.
                           </div>
-                          <div>Once participants register through the entry modal, their records will appear here live.</div>
+                          <div>Once participants register through the registration page, their records will appear here live.</div>
                         </div>
                       ) : (
                         'No participants match the specified search or filter criteria.'
@@ -342,34 +416,6 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                 ) : (
                   filteredList.map((p) => {
                     const isSelected = p.id === selectedId;
-
-                    // Derive active round details based on roundFilter
-                    const activeRoundKey = roundFilter === 'R-01' ? 1 : roundFilter === 'R-02' ? 2 : roundFilter === 'R-03' ? 3 : null;
-                    const roundDetail = activeRoundKey ? p.rounds?.[activeRoundKey] : null;
-
-                    let statusClass =
-                      p.statusType.startsWith('flagged')
-                        ? 'badge-flagged'
-                        : p.statusType === 'completed'
-                          ? 'badge-completed'
-                          : 'badge-in-progress';
-                    let statusText = p.statusLabel;
-
-                    if (roundDetail) {
-                      if (roundDetail.status === 'COMPLETED') {
-                        statusClass = 'badge-completed';
-                        statusText = `${roundFilter}: SUBMITTED`;
-                      } else if (roundDetail.status === 'IN_PROGRESS') {
-                        statusClass = 'badge-in-progress';
-                        statusText = `${roundFilter}: IN-PROGRESS`;
-                      } else if (roundDetail.status === 'ELIGIBLE') {
-                        statusClass = 'badge-eligible';
-                        statusText = `${roundFilter}: ELIGIBLE`;
-                      } else {
-                        statusClass = 'badge-locked';
-                        statusText = `${roundFilter}: LOCKED`;
-                      }
-                    }
 
                     return (
                       <tr
@@ -388,7 +434,92 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                           <span className="cell-roll-number">{p.rollNumber}</span>
                         </td>
                         <td>
-                          <span className="cell-campus-name">{p.campus}</span>
+                          <span className="cell-campus-name" style={{ fontSize: '0.8rem' }}>
+                            {p.department || 'CSE'} • {p.yearOfStudy || '1st Year'}
+                          </span>
+                        </td>
+                        <td>
+                          <code style={{
+                            background: '#1E293B',
+                            color: '#38BDF8',
+                            padding: '3px 7px',
+                            borderRadius: '4px',
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            letterSpacing: '0.05em'
+                          }}>
+                            {p.accessCode || '—'}
+                          </code>
+                        </td>
+                        <td>
+                          {p.approvalStatus === 'APPROVED' ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'rgba(34, 197, 94, 0.15)',
+                              color: '#22C55E',
+                              border: '1px solid rgba(34, 197, 94, 0.35)',
+                              borderRadius: '12px',
+                              padding: '2px 8px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                            }}>
+                              ✓ APPROVED
+                            </span>
+                          ) : p.approvalStatus === 'REJECTED' ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#EF4444',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
+                              borderRadius: '12px',
+                              padding: '2px 8px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                            }}>
+                              ✕ REJECTED
+                            </span>
+                          ) : (
+                            <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={(e) => handleApproveParticipant(p.id, e)}
+                                style={{
+                                  background: '#16A34A',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '4px 10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                                title="Approve candidate and issue access code"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleRejectParticipant(p.id, e)}
+                                style={{
+                                  background: 'transparent',
+                                  color: '#EF4444',
+                                  border: '1px solid #EF4444',
+                                  borderRadius: '4px',
+                                  padding: '3px 8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                                title="Reject registration"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
                         </td>
                         <td>
                           {/* Dedicated R1, R2, R3 Badges */}
@@ -484,9 +615,6 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                             );
                           })()}
                         </td>
-                        <td>
-                          <span className={`status-badge ${statusClass}`}>{statusText}</span>
-                        </td>
                       </tr>
                     );
                   })
@@ -531,6 +659,43 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                 <div className="side-info-row">
                   <span className="info-row-label">Roll Number:</span>
                   <span className="info-row-value">{selectedParticipant.rollNumber}</span>
+                </div>
+                <div className="side-info-row">
+                  <span className="info-row-label">Department / Year:</span>
+                  <span className="info-row-value">{selectedParticipant.department || 'CSE'} • {selectedParticipant.yearOfStudy || '1st Year'}</span>
+                </div>
+                <div className="side-info-row">
+                  <span className="info-row-label">Access Code:</span>
+                  <span className="info-row-value" style={{ fontFamily: 'monospace', fontWeight: 800, color: '#38BDF8' }}>
+                    {selectedParticipant.accessCode || '—'}
+                  </span>
+                </div>
+                <div className="side-info-row">
+                  <span className="info-row-label">Approval Status:</span>
+                  <span className="info-row-value">
+                    {selectedParticipant.approvalStatus === 'APPROVED' ? (
+                      <span style={{ color: '#22C55E', fontWeight: 700 }}>✓ Approved</span>
+                    ) : selectedParticipant.approvalStatus === 'REJECTED' ? (
+                      <span style={{ color: '#EF4444', fontWeight: 700 }}>✕ Rejected</span>
+                    ) : (
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleApproveParticipant(selectedParticipant.id)}
+                          style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Approve Now
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectParticipant(selectedParticipant.id)}
+                          style={{ background: 'transparent', color: '#EF4444', border: '1px solid #EF4444', borderRadius: '4px', padding: '2px 6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </span>
                 </div>
                 <div className="side-info-row">
                   <span className="info-row-label">Assigned Station:</span>

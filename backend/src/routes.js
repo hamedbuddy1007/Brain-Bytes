@@ -73,28 +73,22 @@ async function assertRoundQualification(client, participantId, roundId) {
 }
 
 
-function getEventJoinCodes() {
-  const envCodes = process.env.EVENT_JOIN_CODES;
-  if (!envCodes) {
-    if (process.env.NODE_ENV === 'production') {
-      // In production, require explicit EVENT_JOIN_CODES configuration
-      return [];
-    }
-    // Local development only fallback
-    return ['BYTE2026', 'DATAMANIA26', 'SOLAR26'];
+
+function generateAccessCode() {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = 'BB-';
+  for (let i = 0; i < 4; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
   }
-  return envCodes
-    .split(',')
-    .map((c) => c.trim().toUpperCase())
-    .filter(Boolean);
+  return code;
 }
 
 const participantRegisterSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
   rollNumber: z.string().trim().min(1).max(50),
+  department: z.string().trim().min(1).max(60).optional(),
+  yearOfStudy: z.string().trim().min(1).max(30).optional(),
   collegeName: z.string().trim().min(2).max(160).optional(),
-  joinCode: z.string().trim().min(1).max(30),
-  roundId: z.number().int().min(1).max(3).optional(),
 });
 
 router.get('/health', async (_req, res) => {
@@ -171,7 +165,7 @@ router.get('/auth/admin/me', requireAuth('admin'), async (req, res, next) => {
   }
 });
 
-// Participant Entry: Creates or retrieves persistent participant record in Neon PostgreSQL
+// Participant Registration: Creates a PENDING registration awaiting admin approval
 router.post('/participants/register', async (req, res, next) => {
   try {
     const parsed = participantRegisterSchema.safeParse(req.body);
@@ -180,95 +174,167 @@ router.post('/participants/register', async (req, res, next) => {
       return res.status(400).json({ error: issue });
     }
     const p = parsed.data;
-
-    const allowedCodes = getEventJoinCodes();
-    if (!allowedCodes.length) {
-      return res.status(503).json({ error: 'Event join codes are not configured. Contact competition administration.' });
-    }
-
-    const normalizedCode = p.joinCode.trim().toUpperCase();
-    if (!allowedCodes.includes(normalizedCode)) {
-      return res.status(400).json({ error: 'Invalid event join code. Check auditorium screen.' });
-    }
-
     const normalizedRoll = p.rollNumber.trim().toUpperCase();
     const normalizedName = p.fullName.trim();
-    const college = p.collegeName?.trim() || 'Department of Computer Science';
+    const department = p.department?.trim() || 'CSE';
+    const yearOfStudy = p.yearOfStudy?.trim() || '1st Year';
+    const college = p.collegeName?.trim() || 'Department of Technical Education';
 
     const existingResult = await query(
-      'SELECT id, full_name, roll_number, college_name, ticket_id, assigned_seat, created_at FROM participants WHERE UPPER(roll_number)=UPPER($1) LIMIT 1',
+      'SELECT id, full_name, roll_number, college_name, department, year_of_study, ticket_id, assigned_seat, access_code, approval_status, created_at FROM participants WHERE UPPER(roll_number)=UPPER($1) LIMIT 1',
       [normalizedRoll],
     );
 
-    let participant;
-    let token;
-
     if (existingResult.rowCount) {
       const existing = existingResult.rows[0];
-
-      // Anti-impersonation: Only allow resuming if caller possesses a valid authenticated session for this participant ID.
-      // Knowing the roll number and name is NOT sufficient proof of identity.
-      const currentSession = extractAuth(req, 'participant');
-      const sessionMatches = currentSession && currentSession.id === Number(existing.id);
-
-      if (!sessionMatches) {
-        return res.status(409).json({
-          error: 'This roll number is already registered. To resume an active attempt, please continue from your existing session or contact an event proctor.',
+      if (existing.approval_status === 'APPROVED') {
+        return res.json({
+          status: 'APPROVED',
+          approvalStatus: 'APPROVED',
+          id: Number(existing.id),
+          fullName: existing.full_name,
+          rollNumber: existing.roll_number,
+          accessCode: existing.access_code,
+          department: existing.department,
+          yearOfStudy: existing.year_of_study,
+          message: 'Your registration is already approved! Use your Access Code to enter the arena.',
         });
       }
-
-      participant = existing;
-      token = issueSession(res, { id: participant.id, role: 'participant' });
-      await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
-        'participant',
-        participant.id,
-        'participant.reentry',
-        JSON.stringify({ rollNumber: participant.roll_number, roundId: p.roundId }),
-      ]);
-    } else {
-      if (p.roundId && Number(p.roundId) > 1) {
-        return res.status(403).json({ error: 'Direct registration into Round 2 or 3 is forbidden. All participants must qualify via Round 1.' });
-      }
-
-      const state = await query('SELECT registration_open, active_round FROM competition_state WHERE singleton=TRUE');
-      if (!state.rows[0]?.registration_open) {
-        return res.status(409).json({ error: 'Registration is closed.' });
-      }
-
-      const insertResult = await query(
-        'INSERT INTO participants(full_name, roll_number, college_name) VALUES($1,$2,$3) RETURNING id, full_name, roll_number, college_name, created_at',
-        [normalizedName, normalizedRoll, college],
-      );
-      participant = insertResult.rows[0];
-      const ticketId = `DM-26-${String(participant.id).padStart(4, '0')}`;
-      const assignedSeat = `Station #${((Number(participant.id) - 1) % 120) + 1}`;
-
-      await query('UPDATE participants SET ticket_id=$1, assigned_seat=$2 WHERE id=$3', [ticketId, assignedSeat, participant.id]);
-      participant.ticket_id = ticketId;
-      participant.assigned_seat = assignedSeat;
-
-      token = issueSession(res, { id: participant.id, role: 'participant' });
-      await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
-        'participant',
-        participant.id,
-        'participant.registered',
-        JSON.stringify({ rollNumber: participant.roll_number, ticketId }),
-      ]);
+      return res.json({
+        status: 'PENDING',
+        approvalStatus: existing.approval_status || 'PENDING',
+        id: Number(existing.id),
+        fullName: existing.full_name,
+        rollNumber: existing.roll_number,
+        accessCode: null,
+        department: existing.department,
+        yearOfStudy: existing.year_of_study,
+        message: 'Registration is pending administrator approval.',
+      });
     }
 
-    // Retrieve attempt history
+    // Generate unique access code
+    let accessCode = generateAccessCode();
+    for (let attempts = 0; attempts < 10; attempts++) {
+      const codeCheck = await query('SELECT id FROM participants WHERE access_code = $1', [accessCode]);
+      if (codeCheck.rowCount === 0) break;
+      accessCode = generateAccessCode();
+    }
+
+    const insertResult = await query(
+      `INSERT INTO participants(full_name, roll_number, college_name, department, year_of_study, access_code, approval_status)
+       VALUES($1, $2, $3, $4, $5, $6, 'PENDING')
+       RETURNING id, full_name, roll_number, college_name, department, year_of_study, access_code, approval_status, created_at`,
+      [normalizedName, normalizedRoll, college, department, yearOfStudy, accessCode],
+    );
+
+    const participant = insertResult.rows[0];
+    const ticketId = `BB-26-${String(participant.id).padStart(4, '0')}`;
+    const assignedSeat = `Station #${((Number(participant.id) - 1) % 120) + 1}`;
+
+    await query('UPDATE participants SET ticket_id=$1, assigned_seat=$2 WHERE id=$3', [ticketId, assignedSeat, participant.id]);
+
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'participant',
+      participant.id,
+      'participant.registered',
+      JSON.stringify({ rollNumber: participant.roll_number, accessCode }),
+    ]);
+
+    res.status(201).json({
+      status: 'PENDING',
+      approvalStatus: 'PENDING',
+      id: Number(participant.id),
+      fullName: participant.full_name,
+      rollNumber: participant.roll_number,
+      department: participant.department,
+      yearOfStudy: participant.year_of_study,
+      accessCode: null,
+      message: 'Registration submitted successfully! Please wait while an administrator approves your entry.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Check registration approval status (polled by registration page)
+router.get('/participants/registration-status/:rollNumber', async (req, res, next) => {
+  try {
+    const roll = req.params.rollNumber.trim().toUpperCase();
+    const result = await query(
+      'SELECT id, full_name, roll_number, college_name, department, year_of_study, access_code, approval_status FROM participants WHERE UPPER(roll_number)=UPPER($1) LIMIT 1',
+      [roll],
+    );
+    if (!result.rowCount) {
+      return res.status(404).json({ error: 'Registration not found.' });
+    }
+    const p = result.rows[0];
+    res.json({
+      id: Number(p.id),
+      fullName: p.full_name,
+      rollNumber: p.roll_number,
+      department: p.department,
+      yearOfStudy: p.year_of_study,
+      approvalStatus: p.approval_status || 'PENDING',
+      accessCode: p.approval_status === 'APPROVED' ? p.access_code : null,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Participant Login with Access Code (BB-XXXX)
+router.post('/participants/login-access-code', async (req, res, next) => {
+  try {
+    const body = z.object({
+      accessCode: z.string().trim().min(2).max(20),
+    }).safeParse(req.body);
+
+    if (!body.success) {
+      return res.status(400).json({ error: 'Enter your valid Access Code (e.g. BB-XXXX).' });
+    }
+
+    const code = body.data.accessCode.trim().toUpperCase();
+    const result = await query(
+      'SELECT id, full_name, roll_number, college_name, department, year_of_study, ticket_id, assigned_seat, access_code, approval_status, created_at FROM participants WHERE UPPER(access_code)=UPPER($1) LIMIT 1',
+      [code],
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ error: 'Invalid Access Code. Please check your code or register first.' });
+    }
+
+    const participant = result.rows[0];
+    if (participant.approval_status !== 'APPROVED') {
+      return res.status(403).json({
+        error: 'Your registration is still awaiting administrator approval. Please wait for the admin to accept your entry.',
+        approvalStatus: participant.approval_status,
+      });
+    }
+
+    const token = issueSession(res, { id: participant.id, role: 'participant' });
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'participant',
+      participant.id,
+      'participant.access_code_login',
+      JSON.stringify({ rollNumber: participant.roll_number, accessCode: code }),
+    ]);
+
     const attemptsResult = await query(
       'SELECT id, round_id, started_at, deadline_at, submitted_at, score, correct_count, incorrect_count, unanswered_count, time_taken_seconds FROM attempts WHERE participant_id=$1 ORDER BY round_id ASC',
       [participant.id],
     );
 
-    res.status(existingResult.rowCount ? 200 : 201).json({
+    res.json({
       token,
       id: Number(participant.id),
       fullName: participant.full_name,
       rollNumber: participant.roll_number,
+      department: participant.department,
+      yearOfStudy: participant.year_of_study,
+      accessCode: participant.access_code,
       collegeName: participant.college_name,
-      ticketId: participant.ticket_id || `DM-26-${String(participant.id).padStart(4, '0')}`,
+      ticketId: participant.ticket_id || `BB-26-${String(participant.id).padStart(4, '0')}`,
       assignedSeat: participant.assigned_seat || `Station #${((Number(participant.id) - 1) % 120) + 1}`,
       registeredAt: participant.created_at,
       status: 'verified',
@@ -279,27 +345,20 @@ router.post('/participants/register', async (req, res, next) => {
   }
 });
 
-// Re-authentication requires proof of an active session. A roll number alone never authorizes a session.
+// Re-authentication requires proof of an active session.
 router.post('/participants/reauth', async (req, res, next) => {
   try {
     const session = extractAuth(req, 'participant');
     if (!session) {
       return res.status(401).json({
-        error: 'Cannot re-authenticate without an active session. A roll number alone cannot authorize a session. Please contact an event proctor.',
+        error: 'Cannot re-authenticate without an active session. Please log in with your Access Code.',
       });
     }
 
-    const { rollNumber, joinCode } = req.body || {};
-    if (joinCode) {
-      const allowedCodes = getEventJoinCodes();
-      const normalizedCode = String(joinCode).trim().toUpperCase();
-      if (!allowedCodes.includes(normalizedCode)) {
-        return res.status(400).json({ error: 'Invalid event join code.' });
-      }
-    }
+    const { rollNumber } = req.body || {};
 
     const result = await query(
-      'SELECT id, full_name, roll_number, college_name, ticket_id, assigned_seat, created_at FROM participants WHERE id=$1',
+      'SELECT id, full_name, roll_number, college_name, department, year_of_study, ticket_id, assigned_seat, access_code, approval_status, created_at FROM participants WHERE id=$1',
       [session.id],
     );
 
@@ -321,6 +380,9 @@ router.post('/participants/reauth', async (req, res, next) => {
       id: Number(participant.id),
       fullName: participant.full_name,
       rollNumber: participant.roll_number,
+      department: participant.department,
+      yearOfStudy: participant.year_of_study,
+      accessCode: participant.access_code,
       collegeName: participant.college_name,
       ticketId: participant.ticket_id,
       assignedSeat: participant.assigned_seat,
@@ -334,7 +396,7 @@ router.post('/participants/reauth', async (req, res, next) => {
 router.get('/participants/me', requireAuth('participant'), async (req, res, next) => {
   try {
     const result = await query(
-      'SELECT id, full_name, roll_number, college_name, ticket_id, assigned_seat, created_at FROM participants WHERE id=$1',
+      'SELECT id, full_name, roll_number, college_name, department, year_of_study, ticket_id, assigned_seat, access_code, approval_status, created_at FROM participants WHERE id=$1',
       [req.auth.id],
     );
     if (!result.rowCount) return res.status(401).json({ error: 'Participant session expired.' });
@@ -349,12 +411,28 @@ router.get('/participants/me', requireAuth('participant'), async (req, res, next
       id: Number(participant.id),
       fullName: participant.full_name,
       rollNumber: participant.roll_number,
+      department: participant.department,
+      yearOfStudy: participant.year_of_study,
+      accessCode: participant.access_code,
+      approvalStatus: participant.approval_status,
       collegeName: participant.college_name,
-      ticketId: participant.ticket_id || `DM-26-${String(participant.id).padStart(4, '0')}`,
+      ticketId: participant.ticket_id || `BB-26-${String(participant.id).padStart(4, '0')}`,
       assignedSeat: participant.assigned_seat || `Station #${((Number(participant.id) - 1) % 120) + 1}`,
       registeredAt: participant.created_at,
-      status: 'verified',
-      attempts: attemptsResult.rows,
+      attempts: attemptsResult.rows.map((row) => ({
+        id: Number(row.id),
+        roundId: Number(row.round_id),
+        round_id: Number(row.round_id),
+        startedAt: row.started_at,
+        deadlineAt: row.deadline_at,
+        submittedAt: row.submitted_at,
+        submitted_at: row.submitted_at,
+        score: row.score,
+        correctCount: row.correct_count,
+        incorrectCount: row.incorrect_count,
+        unansweredCount: row.unanswered_count,
+        timeTakenSeconds: row.time_taken_seconds,
+      })),
     });
   } catch (error) {
     next(error);
@@ -378,8 +456,13 @@ router.post('/participants/proctor-event', requireAuth('participant'), async (re
 
 router.get('/competition/state', async (_req, res, next) => {
   try {
-    const result = await query('SELECT status, active_round, registration_open, round_states, round_durations, updated_at FROM competition_state WHERE singleton=TRUE');
-    res.json(result.rows[0]);
+    const result = await query('SELECT status, active_round, registration_open, round_states, round_durations, broadcast_message, broadcast_timestamp, updated_at FROM competition_state WHERE singleton=TRUE');
+    const row = result.rows[0] || {};
+    res.json({
+      ...row,
+      broadcastMessage: row.broadcast_message || null,
+      broadcastTimestamp: row.broadcast_timestamp || null,
+    });
   } catch (error) {
     next(error);
   }
@@ -721,6 +804,10 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
           p.college_name,
           p.ticket_id,
           p.assigned_seat,
+          p.department,
+          p.year_of_study,
+          p.access_code,
+          p.approval_status,
           p.created_at,
           COUNT(a.id)::int AS total_attempts,
           MAX(a.round_id)::int AS latest_round_id,
@@ -866,6 +953,10 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
         initials,
         name: row.full_name,
         campus: row.college_name || 'Department of Computer Science',
+        department: row.department || 'CSE',
+        yearOfStudy: row.year_of_study || '1st Year',
+        accessCode: row.access_code || '—',
+        approvalStatus: row.approval_status || 'PENDING',
         rollNumber: row.roll_number,
         node: row.assigned_seat || `Station #${((Number(row.id) - 1) % 120) + 1}`,
         ticketId: row.ticket_id || `DM-26-${String(row.id).padStart(4, '0')}`,
@@ -927,6 +1018,95 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
     });
 
     res.json(participants);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Approval Actions
+router.post('/admin/participants/:id/approve', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const updated = await query(
+      "UPDATE participants SET approval_status = 'APPROVED' WHERE id = $1 RETURNING id, full_name, roll_number, access_code, approval_status",
+      [id],
+    );
+    if (!updated.rowCount) return res.status(404).json({ error: 'Participant not found.' });
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      'participant.approved',
+      JSON.stringify({ participantId: id, accessCode: updated.rows[0].access_code }),
+    ]);
+    res.json({ success: true, participant: updated.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/admin/participants/:id/reject', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const updated = await query(
+      "UPDATE participants SET approval_status = 'REJECTED' WHERE id = $1 RETURNING id, full_name, roll_number, approval_status",
+      [id],
+    );
+    if (!updated.rowCount) return res.status(404).json({ error: 'Participant not found.' });
+    res.json({ success: true, participant: updated.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/admin/participants/approve-all', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const result = await query(
+      "UPDATE participants SET approval_status = 'APPROVED' WHERE approval_status = 'PENDING' RETURNING id, full_name, roll_number, access_code",
+    );
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      'participants.approve_all',
+      JSON.stringify({ count: result.rowCount }),
+    ]);
+    res.json({ success: true, approvedCount: result.rowCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Broadcast Notice
+router.post('/admin/broadcast', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const body = z.object({
+      message: z.string().trim().min(1).max(500),
+    }).safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ error: 'Broadcast message is required (max 500 characters).' });
+    }
+    const msg = body.data.message;
+    await query(
+      'UPDATE competition_state SET broadcast_message = $1, broadcast_timestamp = NOW() WHERE singleton = TRUE',
+      [msg],
+    );
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      'competition.broadcast',
+      JSON.stringify({ message: msg }),
+    ]);
+    res.json({ success: true, broadcastMessage: msg, broadcastTimestamp: new Date().toISOString() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/admin/broadcast', requireAuth('admin'), async (_req, res, next) => {
+  try {
+    await query(
+      'UPDATE competition_state SET broadcast_message = NULL, broadcast_timestamp = NULL WHERE singleton = TRUE',
+    );
+    res.json({ success: true, message: 'Broadcast cleared.' });
   } catch (error) {
     next(error);
   }

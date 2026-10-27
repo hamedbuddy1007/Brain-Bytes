@@ -7,6 +7,7 @@ interface ParticipantLandingPageProps {
   isRegistrationOpen: boolean;
   onSelectRound: (roundId: number) => void;
   onOpenAdmin: () => void;
+  onOpenRegister: () => void;
 }
 
 interface RoundCardData {
@@ -54,11 +55,23 @@ export const ParticipantLandingPage: React.FC<ParticipantLandingPageProps> = ({
   isRegistrationOpen,
   onSelectRound,
   onOpenAdmin,
+  onOpenRegister,
 }) => {
   return (
     <main className="landing-page-root" id="participant-landing">
-      {/* Top Right Admin Navigation */}
+      {/* Top Bar with Registration and Admin Navigation */}
       <div className="landing-top-bar">
+        <button
+          type="button"
+          onClick={onOpenRegister}
+          className="landing-register-btn"
+          id="btn-landing-register"
+          aria-label="Register as New Participant"
+        >
+          <Icon name="user-check" size={15} />
+          <span>Register / New Participant</span>
+        </button>
+
         <button
           type="button"
           onClick={onOpenAdmin}

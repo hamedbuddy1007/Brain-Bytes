@@ -1,6 +1,9 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ParticipantLandingPage } from './components/ParticipantLandingPage';
-import { RoundCredentialModal } from './components/RoundCredentialModal';
+import { ParticipantRegistrationPage } from './components/ParticipantRegistrationPage';
+import { AccessCodeLoginModal } from './components/AccessCodeLoginModal';
+import { ArenaTransitionOverlay } from './components/ArenaTransitionOverlay';
+import { BroadcastNotification } from './components/BroadcastNotification';
 import { Round1MCQ } from './components/rounds/Round1MCQ';
 import { Round2GraphChallenge } from './components/rounds/Round2GraphChallenge';
 import { Round3RapidFire } from './components/rounds/Round3RapidFire';
@@ -24,7 +27,7 @@ import {
 import { apiRequest } from './services/apiClient';
 import './App.css';
 
-type AppView = 'landing' | 'round-1' | 'round-2' | 'round-3' | 'admin' | 'projector';
+type AppView = 'landing' | 'register' | 'round-1' | 'round-2' | 'round-3' | 'admin' | 'projector';
 
 export function App() {
   // Determine initial view from URL path or hash
@@ -38,6 +41,19 @@ export function App() {
     if (path.startsWith('/admin') || hash.includes('admin')) {
       return 'admin';
     }
+    if (path === '/register' || hash.includes('register')) {
+      return 'register';
+    }
+
+    // A participant session is required to open any competition round directly
+    const participant = getActiveParticipant();
+    if (!participant) {
+      if (typeof window !== 'undefined' && (hash.includes('round-') || path.includes('/round-'))) {
+        window.history.replaceState(null, '', '#/');
+      }
+      return 'landing';
+    }
+
     if (hash.includes('round-1') || path.includes('/round-1')) {
       return 'round-1';
     }
@@ -62,6 +78,8 @@ export function App() {
     return isAdminView && !localStorage.getItem('bb_admin_token');
   });
   const [selectedRoundForCredentials, setSelectedRoundForCredentials] = useState<number | null>(null);
+  const [prefilledAccessCode, setPrefilledAccessCode] = useState<string>('');
+  const [transitioningRound, setTransitioningRound] = useState<{ participant: Participant; roundId: number } | null>(null);
 
   // Restore/verify active admin session with backend GET /api/auth/admin/me
   useEffect(() => {
@@ -93,18 +111,51 @@ export function App() {
     let isMounted = true;
     apiRequest<Participant>('/participants/me')
       .then((p) => {
-        if (isMounted && p?.rollNumber) {
+        if (!isMounted) return;
+        if (p?.rollNumber) {
           setActiveParticipantState(p);
           persistActiveParticipant(p);
+
+          // If participant is on round-2/round-3 but has not submitted the prerequisite round, redirect to landing
+          const hasR1 = p.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
+          const hasR2 = p.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
+
+          if (currentView === 'round-2' && !hasR1) {
+            setCurrentView('landing');
+            window.history.replaceState(null, '', '#/');
+          } else if (currentView === 'round-3' && !hasR2) {
+            setCurrentView('landing');
+            window.history.replaceState(null, '', '#/');
+          }
+        } else {
+          setActiveParticipantState(null);
+          persistActiveParticipant(null);
+          try {
+            sessionStorage.removeItem('bb_active_participant');
+          } catch {}
+          if (currentView.startsWith('round-')) {
+            setCurrentView('landing');
+            window.history.replaceState(null, '', '#/');
+          }
         }
       })
       .catch(() => {
-        // No active session cookie
+        if (!isMounted) return;
+        // Participant session expired, invalid, or reset in database: wipe local session immediately
+        setActiveParticipantState(null);
+        persistActiveParticipant(null);
+        try {
+          sessionStorage.removeItem('bb_active_participant');
+        } catch {}
+        if (currentView.startsWith('round-')) {
+          setCurrentView('landing');
+          window.history.replaceState(null, '', '#/');
+        }
       });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentView]);
 
   // Synchronized Event State across Participant and Admin interfaces
   const [settings, setSettingsState] = useState<AdminSettings>(() => getAdminSettings());
@@ -209,13 +260,15 @@ export function App() {
         setCurrentView('projector');
       } else if (path.startsWith('/admin') || hash.includes('admin')) {
         setCurrentView('admin');
+      } else if (path === '/register' || hash.includes('register')) {
+        setCurrentView('register');
       } else if (hash.includes('round-1')) {
         setCurrentView('round-1');
       } else if (hash.includes('round-2')) {
         setCurrentView('round-2');
       } else if (hash.includes('round-3')) {
         setCurrentView('round-3');
-      } else if (currentView === 'admin' || currentView === 'projector') {
+      } else if (currentView === 'admin' || currentView === 'projector' || currentView === 'register') {
         setCurrentView('landing');
       }
     };
@@ -234,6 +287,8 @@ export function App() {
       window.history.pushState(null, '', '#/admin');
     } else if (view === 'projector') {
       window.history.pushState(null, '', '#/projector');
+    } else if (view === 'register') {
+      window.history.pushState(null, '', '#/register');
     } else if (view === 'round-1') {
       window.history.pushState(null, '', '#/round-1');
     } else if (view === 'round-2') {
@@ -245,7 +300,7 @@ export function App() {
     }
   };
 
-  // Participant Card Selection & Credential Handlers
+  // Participant Card Selection: Prompts for Access Code Login
   const handleSelectRoundCard = (roundId: number) => {
     // If active participant is already authenticated and appeared for Round 1, directly enter!
     if (activeParticipant && roundId > 1) {
@@ -260,39 +315,51 @@ export function App() {
     setSelectedRoundForCredentials(roundId);
   };
 
-  const handleCredentialSuccess = (participant: Participant) => {
-    setActiveParticipant(participant);
-
-    const targetRound = selectedRoundForCredentials;
+  const handleAccessCodeLoginSuccess = (participant: Participant, roundId: number) => {
     setSelectedRoundForCredentials(null);
+    setTransitioningRound({ participant, roundId });
+  };
 
-    if (!targetRound) return;
-    const targetStatus = settings.roundStates[targetRound] || 'locked';
+  const handleTransitionComplete = () => {
+    if (!transitioningRound) return;
+    const { participant, roundId } = transitioningRound;
+    setActiveParticipant(participant);
+    setTransitioningRound(null);
+
+    const targetStatus = settings.roundStates[roundId] || 'locked';
     if (targetStatus === 'locked') {
       navigateToView('landing');
       return;
     }
 
-    // Route to that round's dedicated competition page
-    if (targetRound === 1) {
+    if (roundId === 1) {
       navigateToView('round-1');
-    } else if (targetRound === 2) {
+    } else if (roundId === 2) {
       navigateToView('round-2');
-    } else if (targetRound === 3) {
+    } else if (roundId === 3) {
       navigateToView('round-3');
     }
   };
 
   // Enforce access control: derive effective view so locked rounds or unverified sessions fallback to landing
   const effectiveView: AppView = (() => {
+    if (currentView === 'register') return 'register';
     if (currentView === 'round-1' && (settings.roundStates[1] === 'locked' || !activeParticipant)) {
       return 'landing';
     }
-    if (currentView === 'round-2' && (settings.roundStates[2] === 'locked' || !activeParticipant)) {
-      return 'landing';
+    if (currentView === 'round-2') {
+      if (settings.roundStates[2] === 'locked' || !activeParticipant) return 'landing';
+      const hasR1 = activeParticipant.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
+      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR1) {
+        return 'landing';
+      }
     }
-    if (currentView === 'round-3' && (settings.roundStates[3] === 'locked' || !activeParticipant)) {
-      return 'landing';
+    if (currentView === 'round-3') {
+      if (settings.roundStates[3] === 'locked' || !activeParticipant) return 'landing';
+      const hasR2 = activeParticipant.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
+      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR2) {
+        return 'landing';
+      }
     }
     return currentView;
   })();
@@ -300,8 +367,6 @@ export function App() {
   const handleRecordRoundScore = () => {
     void refreshLeaderboardFromServer();
   };
-
-
 
   // Admin Actions
   const handleResetParticipants = () => {
@@ -341,22 +406,35 @@ export function App() {
           justifyContent: 'center',
           gap: '10px',
         }}>
-          <span style={{ fontSize: '1.1rem' }}>âš ï¸</span>
+          <span style={{ fontSize: '1.1rem' }}>⚠️</span>
           <span>Connection Lost: Local Wi-Fi disconnected. All exam answers are safely saved on this terminal. Do not close or refresh.</span>
         </div>
       )}
 
-      {/* 1. PARTICIPANT LANDING PAGE (Centered titles, 3 round cards, top-right Admin link) */}
+      {/* 1. PARTICIPANT LANDING PAGE */}
       {effectiveView === 'landing' && (
         <ParticipantLandingPage
           roundStates={settings.roundStates}
           isRegistrationOpen={settings.isRegistrationOpen}
           onSelectRound={handleSelectRoundCard}
           onOpenAdmin={() => navigateToView('admin')}
+          onOpenRegister={() => navigateToView('register')}
         />
       )}
 
-      {/* 2. DEDICATED ROUND 1 COMPETITION PAGE (Data MCQ) */}
+      {/* 2. DEDICATED PARTICIPANT REGISTRATION PAGE */}
+      {effectiveView === 'register' && (
+        <ParticipantRegistrationPage
+          onBackToHome={() => navigateToView('landing')}
+          onProceedToArena={(code) => {
+            setPrefilledAccessCode(code);
+            navigateToView('landing');
+            setSelectedRoundForCredentials(1);
+          }}
+        />
+      )}
+
+      {/* 3. DEDICATED ROUND 1 COMPETITION PAGE (Data MCQ) */}
       {effectiveView === 'round-1' && (
         <Round1MCQ
           participant={activeParticipant}
@@ -366,7 +444,7 @@ export function App() {
         />
       )}
 
-      {/* 3. DEDICATED ROUND 2 COMPETITION PAGE (Graph Challenge) */}
+      {/* 4. DEDICATED ROUND 2 COMPETITION PAGE (Graph Challenge) */}
       {effectiveView === 'round-2' && (
         <Round2GraphChallenge
           participant={activeParticipant}
@@ -376,7 +454,7 @@ export function App() {
         />
       )}
 
-      {/* 4. DEDICATED ROUND 3 COMPETITION PAGE (Rapid Fire) */}
+      {/* 5. DEDICATED ROUND 3 COMPETITION PAGE (Rapid Fire) */}
       {effectiveView === 'round-3' && (
         <Round3RapidFire
           participant={activeParticipant}
@@ -386,8 +464,7 @@ export function App() {
         />
       )}
 
-
-      {/* 5. ADMIN INTERFACE (Accessible via /admin, protected by AdminSecurityGate) */}
+      {/* 6. ADMIN INTERFACE (Protected by AdminSecurityGate) */}
       {effectiveView === 'admin' && (
         <AdminSecurityGate
           isAuthenticated={isAdminAuthenticated}
@@ -415,7 +492,7 @@ export function App() {
         </AdminSecurityGate>
       )}
 
-      {/* 6. PROJECTOR SCOREBOARD (Accessible via /projector) */}
+      {/* 7. PROJECTOR SCOREBOARD */}
       {effectiveView === 'projector' && (
         <ProjectorLeaderboard
           onReturnToArena={() => navigateToView('landing')}
@@ -423,19 +500,29 @@ export function App() {
         />
       )}
 
-
-      {/* CREDENTIAL ENTRY MODAL FOR SELECTED ROUND */}
-      <RoundCredentialModal
+      {/* ACCESS CODE LOGIN MODAL FOR SELECTED ROUND */}
+      <AccessCodeLoginModal
         roundId={selectedRoundForCredentials}
-        onClose={() => setSelectedRoundForCredentials(null)}
-        onSubmit={handleCredentialSuccess}
-        existingParticipant={activeParticipant}
-        isRegistrationOpen={settings.isRegistrationOpen}
         roundStatus={
           selectedRoundForCredentials ? settings.roundStates[selectedRoundForCredentials] || 'locked' : 'locked'
         }
-        activeJoinCodes={settings.activeJoinCodes}
+        onClose={() => setSelectedRoundForCredentials(null)}
+        onSuccess={handleAccessCodeLoginSuccess}
+        onOpenRegister={() => navigateToView('register')}
+        initialAccessCode={prefilledAccessCode}
       />
+
+      {/* ARENA TRANSITION ANIMATION OVERLAY */}
+      {transitioningRound && (
+        <ArenaTransitionOverlay
+          participantName={transitioningRound.participant.fullName}
+          roundId={transitioningRound.roundId}
+          onComplete={handleTransitionComplete}
+        />
+      )}
+
+      {/* LIVE PROCTOR BROADCAST NOTIFICATION POPUP (Bottom-Right with X mark & flashing glow) */}
+      <BroadcastNotification />
     </div>
   );
 }

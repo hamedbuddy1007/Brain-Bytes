@@ -14,28 +14,28 @@
    ========================================================================== */
 
 :root {
-  --admin-bg-base: #202124;
-  --admin-bg-panel: #292A2E;
-  --admin-bg-surface: #292A2E;
-  --admin-bg-inset: #202124;
-  --admin-bg-hover: #343238;
-  --admin-border-subtle: #414047;
-  --admin-border-strong: #54535B;
+  --admin-bg-base: transparent;
+  --admin-bg-panel: rgba(20, 24, 38, 0.72);
+  --admin-bg-surface: rgba(24, 28, 44, 0.72);
+  --admin-bg-inset: rgba(12, 15, 24, 0.6);
+  --admin-bg-hover: rgba(38, 44, 68, 0.82);
+  --admin-border-subtle: rgba(255, 255, 255, 0.12);
+  --admin-border-strong: rgba(255, 255, 255, 0.22);
 
   --admin-maroon-primary: #8E233B;
   --admin-maroon-deep: #4A1022;
   --admin-maroon-highlight: #B94B68;
-  --admin-maroon-subtle: rgba(142, 35, 59, 0.16);
-  --admin-maroon-border: rgba(142, 35, 59, 0.45);
-  --admin-maroon-glow: rgba(142, 35, 59, 0.35);
+  --admin-maroon-subtle: rgba(142, 35, 59, 0.22);
+  --admin-maroon-border: rgba(185, 75, 104, 0.45);
+  --admin-maroon-glow: rgba(142, 35, 59, 0.45);
 
   --admin-emerald: #22C55E;
   --admin-amber: #F59E0B;
   --admin-crimson: #EF4444;
 
-  --admin-text-main: #F5F3F4;
-  --admin-text-muted: #B8B2B7;
-  --admin-text-dim: #8E8A90;
+  --admin-text-main: #FFFFFF;
+  --admin-text-muted: #CBD5E1;
+  --admin-text-dim: #94A3B8;
 
   --admin-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --admin-font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
@@ -54,7 +54,7 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background-color: var(--admin-bg-base);
+  background-color: transparent;
   color: var(--admin-text-main);
   font-family: var(--admin-font-sans);
   overflow-x: hidden;
@@ -66,14 +66,17 @@
 }
 
 /* ==========================================================================
-   1. LEFT SIDEBAR (FIXED STATIONARY CONTROLS)
+   1. LEFT SIDEBAR (FIXED STATIONARY CONTROLS - GLASSUI)
    ========================================================================== */
 .admin-sidebar {
   width: 250px;
   min-width: 250px;
   max-width: 250px;
-  background-color: var(--admin-bg-panel);
+  background-color: rgba(18, 22, 34, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--admin-border-subtle);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45), inset -1px 0 0 rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -226,8 +229,11 @@
 }
 
 .admin-top-bar {
-  background-color: var(--admin-bg-panel);
+  background-color: rgba(18, 22, 34, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--admin-border-subtle);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   padding: 14px 28px;
   display: flex;
   align-items: center;
@@ -454,23 +460,26 @@
 }
 
 .overview-kpi-card {
-  background-color: var(--admin-bg-panel);
+  background: rgba(22, 26, 40, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 145px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .overview-kpi-card:hover {
-  background-color: var(--admin-bg-hover);
-  border-color: var(--admin-maroon-border);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: rgba(32, 38, 58, 0.85);
+  border-color: var(--admin-maroon-highlight);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(142, 35, 59, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .kpi-card-header {
@@ -562,13 +571,16 @@
 }
 
 .admin-panel-card {
-  background-color: var(--admin-bg-panel);
+  background: rgba(22, 26, 40, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 12px;
-  padding: 22px 24px;
+  border-radius: 16px;
+  padding: 24px 26px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .panel-card-header {
@@ -1164,12 +1176,15 @@
 }
 
 .registry-table-card {
-  background-color: var(--admin-bg-panel);
+  background: rgba(20, 24, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .table-top-meta {
@@ -1366,14 +1381,17 @@
 
 /* Participant Details Side Panel */
 .participant-side-panel {
-  background-color: var(--admin-bg-panel);
+  background: rgba(20, 24, 38, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   height: fit-content;
   position: sticky;
   top: 90px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .side-panel-header {
@@ -1490,20 +1508,23 @@
 }
 
 /* ==========================================================================
-   6. PROJECTOR DISPLAY (DISTRACTION-FREE FULL SCREEN)
+   6. PROJECTOR DISPLAY (DISTRACTION-FREE FULL SCREEN - GLASSUI)
    ========================================================================== */
 .projector-stage-root {
   min-height: 100vh;
   width: 100%;
-  background-color: var(--admin-bg-base);
+  background-color: transparent;
   color: var(--admin-text-main);
   display: flex;
   flex-direction: column;
 }
 
 .projector-top-strip {
-  background-color: var(--admin-bg-panel);
+  background-color: rgba(18, 22, 34, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--admin-border-subtle);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   padding: 12px 28px;
   display: flex;
   align-items: center;
@@ -1648,19 +1669,23 @@
 }
 
 .stage-podium-card {
-  background-color: var(--admin-bg-panel);
+  background: rgba(22, 26, 40, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   position: relative;
-  transition: transform 0.2s ease;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
 }
 
 .stage-podium-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .podium-card-top-tag {
@@ -1769,10 +1794,13 @@
 
 /* Standings Card & Table (Ranks 4-10) */
 .stage-standings-card {
-  background-color: var(--admin-bg-panel);
+  background: rgba(20, 24, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--admin-border-subtle);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .standings-table {

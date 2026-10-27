@@ -57,12 +57,37 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     });
   };
 
-  const handleBroadcast = () => {
+  // Load existing broadcast from server on mount
+  useEffect(() => {
+    apiRequest<{ broadcastMessage?: string | null }>('/competition/state')
+      .then((state) => {
+        if (state?.broadcastMessage) {
+          setBroadcastMessage(state.broadcastMessage);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleBroadcast = async () => {
     const msg = prompt('Enter announcement for participant terminals:', 'Notice: 3 minutes remaining in current round.');
-    if (msg) {
-      setBroadcastMessage(msg);
-      setTimeout(() => setBroadcastMessage(null), 8000);
+    if (msg?.trim()) {
+      try {
+        await apiRequest('/admin/broadcast', {
+          method: 'POST',
+          body: JSON.stringify({ message: msg.trim() }),
+        });
+        setBroadcastMessage(msg.trim());
+      } catch (err) {
+        alert(`Failed to broadcast notice: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     }
+  };
+
+  const handleDismissBroadcast = async () => {
+    try {
+      await apiRequest('/admin/broadcast', { method: 'DELETE' });
+    } catch {}
+    setBroadcastMessage(null);
   };
 
   const r1State = settings.roundStates[1];
@@ -86,8 +111,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           <button
             type="button"
             className="btn-dismiss-broadcast"
-            onClick={() => setBroadcastMessage(null)}
-            aria-label="Dismiss broadcast"
+            onClick={handleDismissBroadcast}
+            aria-label="Dismiss and clear broadcast"
+            title="Clear broadcast notice for all terminals"
           >
             ✕
           </button>

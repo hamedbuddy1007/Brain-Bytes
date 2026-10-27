@@ -629,6 +629,7 @@ export function resetRoundState(roundId: 1 | 2 | 3): ResetRoundResult {
  */
 export function purgeAllTournamentData(): void {
   try {
+    sessionStorage.clear();
     localStorage.removeItem(KEY_SUBMISSIONS);
     localStorage.removeItem(KEY_QUALIFICATIONS);
     localStorage.removeItem(KEY_CLEARED_ROUNDS);
@@ -639,26 +640,22 @@ export function purgeAllTournamentData(): void {
   }
   serverLeaderboard = [];
 
-  const tournamentPrefixes = [
-    'bb_progress_',
-    'bb_answers_',
-    'bb_marked_',
-    'bb_submitted_',
-    'bb_score_',
-    'bb_review_',
-    'bb_attempt_id_',
-  ];
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && tournamentPrefixes.some((p) => k.startsWith(p))) {
+      if (k && k.startsWith('bb_') && k !== 'bb_admin_token' && k !== 'bb_admin_auth') {
         keysToRemove.push(k);
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
   } catch (err) {
     console.error('Failed clearing tournament keys:', err);
+  }
+
+  // Clear hash to prevent user from being stuck in a round route
+  if (typeof window !== 'undefined' && window.location.hash.includes('round')) {
+    window.location.hash = '#/';
   }
 
   // Notify all components across the application
@@ -682,7 +679,7 @@ export function clearAllAttemptsOnly(): void {
   }
   serverLeaderboard = [];
 
-  const tournamentPrefixes = [
+  const attemptPrefixes = [
     'bb_progress_',
     'bb_answers_',
     'bb_marked_',
@@ -695,7 +692,7 @@ export function clearAllAttemptsOnly(): void {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && tournamentPrefixes.some((p) => k.startsWith(p))) {
+      if (k && attemptPrefixes.some((p) => k.startsWith(p))) {
         keysToRemove.push(k);
       }
     }
@@ -704,9 +701,27 @@ export function clearAllAttemptsOnly(): void {
     console.error('Failed clearing attempt storage prefixes:', err);
   }
 
+  // Reset participant's cached attempt list in sessionStorage if present
+  try {
+    const rawP = sessionStorage.getItem(KEY_ACTIVE_PARTICIPANT);
+    if (rawP) {
+      const parsedP = JSON.parse(rawP);
+      parsedP.attempts = [];
+      sessionStorage.setItem(KEY_ACTIVE_PARTICIPANT, JSON.stringify(parsedP));
+    }
+  } catch {
+    // ignore
+  }
+
+  // Clear hash to prevent user from staying stuck on #/round-2 or #/round-3
+  if (typeof window !== 'undefined' && (window.location.hash.includes('round-2') || window.location.hash.includes('round-3'))) {
+    window.location.hash = '#/';
+  }
+
   window.dispatchEvent(new Event('bb_storage_sync'));
   window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 1 } }));
   window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 2 } }));
   window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 3 } }));
 }
+
 

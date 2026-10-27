@@ -359,17 +359,45 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
       })
       .catch((err: unknown) => {
         console.warn('Attempt initialization notice for Round 3:', err);
+        // Clear stale local responses on attempt failure, rejection, or reset
+        setSelectedAnswers({});
+        setMarkedForReview(new Set());
+        if (participantKey) {
+          try {
+            localStorage.removeItem(`bb_answers_r3_${participantKey}`);
+            localStorage.removeItem(`bb_marked_r3_${participantKey}`);
+            localStorage.removeItem(`bb_submitted_r3_${participantKey}`);
+            localStorage.removeItem(`bb_score_r3_${participantKey}`);
+            localStorage.removeItem(`bb_review_r3_${participantKey}`);
+            localStorage.removeItem(`bb_attempt_id_r3_${participantKey}`);
+          } catch {
+            // ignore
+          }
+        }
+        setIsSubmitted(false);
+        setFinalScore(null);
+        setReviewData({});
+
+        const isAuthErr = err instanceof ApiError && (err.status === 401 || err.status === 403 || err.status === 423);
+        const errMsg = err instanceof Error ? err.message : '';
+        if (isAuthErr || errMsg.toLowerCase().includes('qualif') || errMsg.toLowerCase().includes('submit round 2') || errMsg.toLowerCase().includes('not currently open')) {
+          if (typeof window !== 'undefined') {
+            window.location.hash = '#/';
+          }
+          if (onExit) onExit();
+        }
       });
     return () => {
       isMounted = false;
     };
-  }, [participantKey, applyReviewPayload]);
+  }, [participantKey, applyReviewPayload, onExit]);
 
   // Synchronize on authoritative round reset
   useEffect(() => {
-    const handleReset = (e: Event) => {
-      const ce = e as CustomEvent<{ roundId: number }>;
-      if (!ce.detail || ce.detail.roundId === 3) {
+    const handleReset = (e?: Event) => {
+      const ce = e as CustomEvent<{ roundId?: number }> | undefined;
+      const targetRound = ce?.detail?.roundId;
+      if (!targetRound || targetRound === 3) {
         if (participantKey) {
           try {
             localStorage.removeItem(`bb_answers_r3_${participantKey}`);
@@ -392,20 +420,27 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
         setIsSubmitting(false);
         setSubmitError(null);
         setReviewData({});
+        if (typeof window !== 'undefined') {
+          window.location.hash = '#/';
+        }
+        if (onExit) onExit();
       }
     };
     window.addEventListener('bb_round_reset', handleReset);
-    return () => window.removeEventListener('bb_round_reset', handleReset);
-  }, [participantKey, roundQuestions]);
+    window.addEventListener('bb_storage_sync', handleReset);
+    return () => {
+      window.removeEventListener('bb_round_reset', handleReset);
+      window.removeEventListener('bb_storage_sync', handleReset);
+    };
+  }, [participantKey, roundQuestions, onExit]);
 
-  const tryReauth = useCallback(async (manualCode?: string): Promise<boolean> => {
+  const tryReauth = useCallback(async (_manualCode?: string): Promise<boolean> => {
     const roll = participant?.rollNumber || participantKey;
-    const code = manualCode?.trim().toUpperCase() || participant?.joinCode || localStorage.getItem('bb_last_join_code') || 'BYTE2026';
     if (!roll) return false;
     try {
       const res = await apiRequest<{ token?: string }>('/participants/reauth', {
         method: 'POST',
-        body: JSON.stringify({ rollNumber: roll, joinCode: code }),
+        body: JSON.stringify({ rollNumber: roll }),
       });
       if (res?.token) {
         localStorage.setItem('bb_participant_token', res.token);
