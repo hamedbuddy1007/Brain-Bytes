@@ -11,42 +11,14 @@ interface AdminSettingsViewProps {
 }
 
 export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
-  settings,
-  onUpdateSettings,
+  settings: _settings,
+  onUpdateSettings: _onUpdateSettings,
   onResetAll,
 }) => {
   const [eventName, setEventName] = useState('DATA MANIA — BRAIN BYTES');
   const [auditorium, setAuditorium] = useState('Auditorium Hall B // Cluster 01');
-  const [newCodeInput, setNewCodeInput] = useState('');
   const [isPublicLeaderboard, setIsPublicLeaderboard] = useState(true);
   const [selectedResetRound, setSelectedResetRound] = useState<1 | 2 | 3>(1);
-
-  // Join Code Handlers
-  const handleAddCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newCodeInput.trim().toUpperCase();
-    if (!trimmed) return;
-    if (settings.activeJoinCodes.includes(trimmed)) {
-      alert('This join code is already registered.');
-      return;
-    }
-    onUpdateSettings({
-      ...settings,
-      activeJoinCodes: [...settings.activeJoinCodes, trimmed],
-    });
-    setNewCodeInput('');
-  };
-
-  const handleRemoveCode = (code: string) => {
-    if (settings.activeJoinCodes.length <= 1) {
-      alert('At least one join code must remain active for participant authentication.');
-      return;
-    }
-    onUpdateSettings({
-      ...settings,
-      activeJoinCodes: settings.activeJoinCodes.filter((c: string) => c !== code),
-    });
-  };
 
   const handleSaveMetadata = () => {
     alert('Tournament metadata and stage configuration saved.');
@@ -123,58 +95,28 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Join Codes & Arena Visibility */}
+        {/* Right Column: Access Code Authentication & Arena Visibility */}
         <div className="admin-subpanel-card">
           <div className="subpanel-header">
             <div className="subpanel-title-group">
               <Icon name="key" size={16} style={{ color: '#8E233B' }} />
-              <span>EVENT JOIN CODES</span>
+              <span>CANDIDATE ACCESS CODES</span>
             </div>
-            <span style={{ color: '#B94B68', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.74rem', fontWeight: 800 }}>
-              {settings.activeJoinCodes.length} REGISTERED
+            <span style={{ color: '#22C55E', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.74rem', fontWeight: 800 }}>
+              INDIVIDUAL CODES
             </span>
           </div>
 
-          <form onSubmit={handleAddCode} style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
-            <input
-              type="text"
-              className="search-input-field"
-              placeholder="New Join Code (e.g. BRAIN2026)"
-              value={newCodeInput}
-              onChange={(e) => setNewCodeInput(e.target.value)}
-            />
-            <button type="submit" className="btn-admin-primary">
-              ADD
-            </button>
-          </form>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '60px', marginTop: '6px' }}>
-            {settings.activeJoinCodes.map((code: string) => (
-              <div
-                key={code}
-                style={{
-                  background: '#202124',
-                  border: '1px solid #414047',
-                  borderRadius: '6px',
-                  padding: '6px 12px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: '0.8rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <span style={{ color: '#F5F3F4', fontWeight: 700 }}>{code}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCode(code)}
-                  style={{ background: 'transparent', border: 'none', color: '#B8B2B7', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
-                  title="Remove code"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+          <div style={{ background: '#202124', border: '1px solid #414047', borderRadius: '6px', padding: '14px', marginTop: '8px' }}>
+            <div style={{ fontSize: '0.8rem', color: '#F5F3F4', fontWeight: 700, marginBottom: '6px' }}>
+              INDIVIDUAL DESK AUTHENTICATION
+            </div>
+            <p style={{ fontSize: '0.76rem', color: '#B8B2B7', lineHeight: 1.45, margin: 0 }}>
+              Each candidate is assigned a unique, proctor-approved Access Code (e.g. <code>BB-XXXX</code>) upon registering. Candidates log in individually on the Login page to unlock the Competition Arena.
+            </p>
+            <div style={{ marginTop: '10px', fontSize: '0.74rem', color: '#EF4444' }}>
+              → Manage, approve, or reject candidate access codes in the <strong>Participants</strong> tab.
+            </div>
           </div>
 
           {/* Public Arena Leaderboard Publishing */}

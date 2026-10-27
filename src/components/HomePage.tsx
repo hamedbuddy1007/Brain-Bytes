@@ -10,6 +10,7 @@ interface HomePageProps {
   onOpenLogin: () => void;
   onOpenAdmin: () => void;
   onEnterArena: () => void;
+  onSignOut?: () => void;
 }
 
 interface RoundIntro {
@@ -98,6 +99,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onOpenLogin,
   onOpenAdmin,
   onEnterArena,
+  onSignOut,
 }) => {
   return (
     <div className="home-page-root" id="home-landing-page">
@@ -120,6 +122,16 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <span className="user-dot" />
                 <span className="user-name">{activeParticipant.fullName}</span>
                 <span className="user-roll">({activeParticipant.rollNumber})</span>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="home-pill-signout"
+                    title="Sign Out / Switch Station"
+                  >
+                    <Icon name="log-out" size={12} />
+                  </button>
+                )}
               </div>
             ) : null}
 

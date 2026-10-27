@@ -9,8 +9,8 @@ export interface Participant {
   department?: string;
   yearOfStudy?: string;
   accessCode?: string;
+  token?: string;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  joinCode?: string;
   registeredAt: string;
   ticketId: string;
   assignedSeat: string;

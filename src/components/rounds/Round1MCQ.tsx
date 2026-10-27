@@ -429,7 +429,22 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     };
   }, [participantKey, roundQuestions, onExit]);
 
-  const tryReauth = useCallback(async (_manualCode?: string): Promise<boolean> => {
+  const tryReauth = useCallback(async (manualCode?: string): Promise<boolean> => {
+    if (manualCode && manualCode.trim()) {
+      try {
+        const res = await apiRequest<{ token?: string; rollNumber?: string }>('/participants/login-access-code', {
+          method: 'POST',
+          body: JSON.stringify({ accessCode: manualCode.trim().toUpperCase() }),
+        });
+        if (res?.token) {
+          localStorage.setItem('bb_participant_token', res.token);
+          return true;
+        }
+      } catch (err) {
+        console.warn('Reauth via access code failed:', err);
+      }
+    }
+
     const roll = participant?.rollNumber || participantKey;
     if (!roll) return false;
     try {
@@ -510,13 +525,13 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
             } catch (retryErr) {
               isSubmittingRef.current = false;
               const msg = retryErr instanceof Error ? retryErr.message : 'Authentication required';
-              setSubmitError(`Submission failed: ${msg}. Enter event join code below to reconnect.`);
+              setSubmitError(`Submission failed: ${msg}. Enter your Access Code below to reconnect.`);
               setIsSubmitModalOpen(true);
               return;
             }
           } else {
             isSubmittingRef.current = false;
-            setSubmitError('Submission failed: Authentication required. Enter event join code below to reconnect.');
+            setSubmitError('Submission failed: Authentication required. Enter your Access Code below to reconnect.');
             setIsSubmitModalOpen(true);
             return;
           }
@@ -607,7 +622,7 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
         (err instanceof ApiError && err.status === 401) ||
         (err instanceof Error && err.message.toLowerCase().includes('authentication'));
       if (isAuthErr) {
-        setSubmitError('Submission failed: Authentication required. Enter event join code below to reconnect.');
+        setSubmitError('Submission failed: Authentication required. Enter your Access Code below to reconnect.');
       } else {
         const msg = err instanceof Error ? err.message : 'Backend submission failed.';
         setSubmitError(`Submission failed: ${msg}. Your response was not saved. Please try submitting again.`);
@@ -1397,11 +1412,11 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
 
             {submitError && (
               <div>
-                <div style={{ background: 'rgba(255, 77, 77, 0.15)', border: '1px solid rgba(255, 77, 77, 0.4)', color: '#FF6B6B', padding: '10px 14px', borderRadius: '8px', marginBottom: (submitError.includes('join code') || submitError.includes('Authentication')) ? '10px' : '16px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: 'rgba(255, 77, 77, 0.15)', border: '1px solid rgba(255, 77, 77, 0.4)', color: '#FF6B6B', padding: '10px 14px', borderRadius: '8px', marginBottom: (submitError.includes('Access Code') || submitError.includes('Authentication')) ? '10px' : '16px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon name="alert-circle" size={18} />
                   <span>{submitError}</span>
                 </div>
-                {(submitError.includes('join code') || submitError.includes('Authentication')) && (
+                {(submitError.includes('Access Code') || submitError.includes('Authentication')) && (
                   <div style={{ background: 'rgba(255, 107, 0, 0.1)', border: '1px solid rgba(255, 107, 0, 0.3)', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input
                       type="text"

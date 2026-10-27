@@ -26,7 +26,7 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
   const [rollNumber, setRollNumber] = useState(existingParticipant?.rollNumber || '');
   const [department, setDepartment] = useState(existingParticipant?.department || '');
   const [yearOfStudy, setYearOfStudy] = useState(existingParticipant?.yearOfStudy || '');
-  const [joinCode, setJoinCode] = useState(existingParticipant?.joinCode || '');
+  const [joinCode, setJoinCode] = useState(existingParticipant?.accessCode || '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -127,7 +127,7 @@ export const RoundCredentialModal: React.FC<RoundCredentialModalProps> = ({
         department,
         yearOfStudy,
         collegeName: affiliationLabel,
-        joinCode: trimmedCode,
+        accessCode: trimmedCode,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Entry failed.';

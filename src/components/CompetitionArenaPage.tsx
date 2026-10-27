@@ -7,6 +7,8 @@ interface CompetitionArenaPageProps {
   activeParticipant: Participant | null;
   onSelectRound: (roundId: number) => void;
   onBackToHome: () => void;
+  onOpenLogin: () => void;
+  onSignOut?: () => void;
 }
 
 interface RoundTabMeta {
@@ -77,6 +79,8 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
   activeParticipant,
   onSelectRound,
   onBackToHome,
+  onOpenLogin,
+  onSignOut,
 }) => {
   // Determine initially selected tab based on participant progress or active round
   const [selectedTabId, setSelectedTabId] = useState<number>(() => {
@@ -150,20 +154,39 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
 
           <div className="arena-header-right">
             {activeParticipant ? (
-              <div className="arena-candidate-badge" id="arena-candidate-chip">
-                <span className="candidate-pulse-dot" />
-                <div className="candidate-info">
-                  <span className="candidate-name">{activeParticipant.fullName}</span>
-                  <span className="candidate-meta">
-                    {activeParticipant.rollNumber} • {activeParticipant.collegeName || 'Proctored Station'}
-                  </span>
+              <div className="arena-user-cluster">
+                <div className="arena-candidate-badge" id="arena-candidate-chip">
+                  <span className="candidate-pulse-dot" />
+                  <div className="candidate-info">
+                    <span className="candidate-name">{activeParticipant.fullName}</span>
+                    <span className="candidate-meta">
+                      {activeParticipant.rollNumber} • {activeParticipant.collegeName || 'Proctored Station'}
+                    </span>
+                  </div>
                 </div>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="arena-signout-btn"
+                    title="Sign Out / Switch Station"
+                    id="btn-arena-signout"
+                  >
+                    <Icon name="log-out" size={14} />
+                    <span>Sign Out</span>
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="arena-unauth-badge">
-                <Icon name="key" size={14} />
-                <span>Station Login Required to Play</span>
-              </div>
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                className="arena-login-header-btn"
+                id="btn-arena-header-login"
+              >
+                <Icon name="key" size={15} />
+                <span>Login with Access Code</span>
+              </button>
             )}
           </div>
         </div>
@@ -353,13 +376,19 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
             ) : (
               <button
                 type="button"
-                onClick={() => onSelectRound(activeRoundMeta.id)}
+                onClick={() => {
+                  if (!activeParticipant) {
+                    onOpenLogin();
+                  } else {
+                    onSelectRound(activeRoundMeta.id);
+                  }
+                }}
                 className="btn-stage-action btn-stage-launch"
                 id={`btn-launch-round-${activeRoundMeta.id}`}
               >
                 <Icon name="play" size={18} />
                 <span>
-                  {activeParticipant ? `Enter ${activeRoundMeta.title} Now` : `Login & Start ${activeRoundMeta.title}`}
+                  {activeParticipant ? `Enter ${activeRoundMeta.title} Now` : `Login with Access Code to Enter`}
                 </span>
                 <Icon name="arrow-right" size={16} />
               </button>
@@ -386,7 +415,11 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 onClick={() => {
                   setSelectedTabId(r.id);
                   if (status !== 'locked') {
-                    onSelectRound(r.id);
+                    if (!activeParticipant) {
+                      onOpenLogin();
+                    } else {
+                      onSelectRound(r.id);
+                    }
                   }
                 }}
                 onKeyDown={(e) => {
@@ -394,7 +427,11 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     e.preventDefault();
                     setSelectedTabId(r.id);
                     if (status !== 'locked') {
-                      onSelectRound(r.id);
+                      if (!activeParticipant) {
+                        onOpenLogin();
+                      } else {
+                        onSelectRound(r.id);
+                      }
                     }
                   }
                 }}
