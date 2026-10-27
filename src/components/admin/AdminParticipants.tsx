@@ -3,6 +3,7 @@ import { Icon } from '../Icon';
 import type { RegistryParticipant } from '../../types/competition';
 
 import { apiRequest } from '../../services/apiClient';
+import { clearAllAttemptsOnly, purgeAllTournamentData } from '../../services/competitionStateService';
 
 interface AdminParticipantsProps {
   onReturnToOverview?: () => void;
@@ -95,24 +96,98 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
     setSelectedId((prev) => (prev === id ? null : id));
   };
 
+  const handleResetAttemptsKeepParticipants = async () => {
+    if (window.confirm('RESET ALL ATTEMPTS: Are you sure you want to reset all round attempts? Registered participants will remain in the database, but all round scores and attempt answers will be cleared so they can take the rounds again.')) {
+      try {
+        setIsLoading(true);
+        await apiRequest('/admin/reset-attempts', { method: 'POST' });
+        clearAllAttemptsOnly();
+        await loadParticipants();
+        alert('All participant attempts have been successfully reset. Participants remain registered.');
+      } catch (err) {
+        alert(`Failed to reset attempts: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleResetAllParticipantsAndAttempts = async () => {
+    if (window.confirm('DANGER PURGE: Are you sure you want to completely purge ALL participants and attempts? This removes all participant registrations, attempts, answers, and scores from the database.')) {
+      try {
+        setIsLoading(true);
+        await apiRequest('/admin/reset-all', { method: 'POST' });
+        purgeAllTournamentData();
+        await loadParticipants();
+        alert('All participants and attempts have been completely reset.');
+      } catch (err) {
+        alert(`Failed to reset tournament: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   return (
     <div className="overview-container">
       {/* Header */}
-      <div className="screen-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="screen-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 className="screen-maintitle">Participants</h1>
           <p className="screen-subtitle">Authoritative Neon PostgreSQL participant registry & live round submissions</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={fetchParticipants}
-          disabled={isLoading}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          <Icon name="refresh" size={15} />
-          <span>{isLoading ? 'Syncing...' : 'Refresh Registry'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleResetAttemptsKeepParticipants}
+            disabled={isLoading}
+            style={{
+              borderColor: '#F59E0B',
+              color: '#F59E0B',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+            }}
+            title="Reset all attempts, submissions, and scores while keeping participant registrations"
+          >
+            <Icon name="refresh-cw" size={14} />
+            <span>Keep Participants & Reset Attempts</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleResetAllParticipantsAndAttempts}
+            disabled={isLoading}
+            style={{
+              borderColor: '#EF4444',
+              color: '#EF4444',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+            }}
+            title="Purge all participant entries, attempts, answers, and qualifications"
+          >
+            <Icon name="trash" size={14} />
+            <span>Reset Participants Entry & Attempts</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={fetchParticipants}
+            disabled={isLoading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Icon name="refresh" size={15} />
+            <span>{isLoading ? 'Syncing...' : 'Refresh Registry'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Error State */}
@@ -474,6 +549,15 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                   const spR2 = selectedParticipant.rounds?.[2];
                   const spR3 = selectedParticipant.rounds?.[3];
 
+                  const formatTimerValue = (seconds?: number | null) => {
+                    if (seconds === null || seconds === undefined || isNaN(Number(seconds))) return '--';
+                    const totalMs = Math.round(Number(seconds) * 1000);
+                    const minutes = Math.floor(totalMs / 60000);
+                    const sec = Math.floor((totalMs % 60000) / 1000);
+                    const ms = totalMs % 1000;
+                    return `${String(minutes).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+                  };
+
                   return (
                     <>
                       <div className="side-round-card">
@@ -491,7 +575,7 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                         <div className="side-round-card-body">
                           <div>Score: <strong>{spR1 && spR1.score !== null ? `${spR1.score} / 20 pts` : 'Not submitted'}</strong></div>
                           {spR1?.submitted && (
-                            <div>Correct: {spR1.solvedCount}/20 &nbsp;•&nbsp; Time: {spR1.timeTakenSeconds}s</div>
+                            <div>Correct: {spR1.solvedCount}/20 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR1.timeTakenSeconds)}</span></div>
                           )}
                         </div>
                       </div>
@@ -514,7 +598,7 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                         <div className="side-round-card-body">
                           <div>Score: <strong>{spR2 && spR2.score !== null ? `${spR2.score} / 5 pts` : spR2?.eligible ? 'Eligible (Not attempted)' : 'Locked'}</strong></div>
                           {spR2?.submitted && (
-                            <div>Correct: {spR2.solvedCount}/5 &nbsp;•&nbsp; Time: {spR2.timeTakenSeconds}s</div>
+                            <div>Correct: {spR2.solvedCount}/5 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR2.timeTakenSeconds)}</span></div>
                           )}
                         </div>
                       </div>
@@ -537,7 +621,7 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                         <div className="side-round-card-body">
                           <div>Score: <strong>{spR3 && spR3.score !== null ? `${spR3.score} / 5 pts` : spR3?.eligible ? 'Eligible (Not attempted)' : 'Locked'}</strong></div>
                           {spR3?.submitted && (
-                            <div>Correct: {spR3.solvedCount}/5 &nbsp;•&nbsp; Time: {spR3.timeTakenSeconds}s</div>
+                            <div>Correct: {spR3.solvedCount}/5 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR3.timeTakenSeconds)}</span></div>
                           )}
                         </div>
                       </div>

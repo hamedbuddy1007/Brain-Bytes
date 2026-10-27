@@ -158,6 +158,8 @@
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
   display: inline-flex;
   align-items: center;
   gap: 6px;

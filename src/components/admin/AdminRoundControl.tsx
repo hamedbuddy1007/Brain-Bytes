@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../Icon';
 import type { AdminSettings, RoundStatus } from '../../types/competition';
 import {
@@ -8,6 +8,8 @@ import {
   subscribeToCompetitionSync,
   resetRoundState,
   getRoundProgressCount,
+  clearAllAttemptsOnly,
+  purgeAllTournamentData,
   type SubmissionRecord,
 } from '../../services/competitionStateService';
 import { apiRequest } from '../../services/apiClient';
@@ -85,32 +87,31 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     return () => unsubscribe();
   }, []);
 
+  const fetchDbStats = useCallback(() => {
+    apiRequest<{
+      totalParticipants: number;
+      activeAttempts: number;
+      completedAttempts: number;
+      r1Completed: number;
+      r2Completed: number;
+      r3Completed: number;
+      r2Qualified?: number;
+      r3Qualified?: number;
+    }>('/admin/overview-stats')
+      .then((data) => {
+        if (data) setDbStats(data);
+      })
+      .catch(() => {});
+  }, []);
+
   // Poll authoritative database stats so submission counts match reality
   useEffect(() => {
-    let active = true;
-    const fetchDbStats = () => {
-      apiRequest<{
-        totalParticipants: number;
-        activeAttempts: number;
-        completedAttempts: number;
-        r1Completed: number;
-        r2Completed: number;
-        r3Completed: number;
-        r2Qualified?: number;
-        r3Qualified?: number;
-      }>('/admin/overview-stats')
-        .then((data) => {
-          if (active && data) setDbStats(data);
-        })
-        .catch(() => {});
-    };
     fetchDbStats();
     const interval = setInterval(fetchDbStats, 4000);
     return () => {
-      active = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchDbStats]);
 
   // Load the authoritative global status and round durations from the server
   useEffect(() => {
@@ -430,6 +431,56 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
           message: `Successfully reset ${roundName} on the server! All attempts and in-progress drafts cleared.`,
           roundId: targetRoundId,
         });
+      },
+    });
+  };
+
+  const handleResetAttemptsKeepParticipants = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reset All Attempts (Keep Registered Participants)',
+      description: 'Are you sure you want to reset all round attempts? All registered participants will remain in the database with their roll numbers, names, and departments, but ALL round submissions, answer sheets, scores, and qualifications will be wiped clean. Participants will be able to take the rounds again fresh.',
+      onConfirm: async () => {
+        try {
+          await apiRequest('/admin/reset-attempts', { method: 'POST' });
+          clearAllAttemptsOnly();
+          setSubmissions([]);
+          setResetToast({
+            message: 'All participant attempts have been reset. Registered participants are retained.',
+            roundId: 0,
+          });
+          fetchDbStats();
+        } catch (err) {
+          alert(`Failed to reset attempts: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
+  const handleResetAllParticipantsAndAttempts = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'DANGER: Full Tournament Reset (Participants & Attempts)',
+      description: 'WARNING: You are about to permanently purge ALL participant registrations, round attempts, submitted answers, and qualification logs from the PostgreSQL database. This completely resets the tournament to blank state. Are you sure you want to proceed?',
+      onConfirm: async () => {
+        try {
+          await apiRequest('/admin/reset-all', { method: 'POST' });
+          purgeAllTournamentData();
+          setSubmissions([]);
+          setGlobalCompetitionState('NOT_STARTED');
+          setCompetitionStateLocal('NOT_STARTED');
+          setResetToast({
+            message: 'Complete reset executed. All participants and attempts have been removed.',
+            roundId: 0,
+          });
+          fetchDbStats();
+        } catch (err) {
+          alert(`Failed to reset tournament: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
       },
     });
   };
@@ -1022,6 +1073,54 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
                 onClick={() => handleGlobalStateChange('COMPLETED')}
               >
                 Completed
+              </button>
+            </div>
+          </div>
+
+          {/* Tournament Reset Management */}
+          <div className="secondary-block" style={{ border: '1px solid rgba(239, 68, 68, 0.25)', background: 'rgba(239, 68, 68, 0.03)' }}>
+            <h4 className="secondary-block-title" style={{ color: '#EF4444' }}>Tournament Reset Controls</h4>
+            <p className="secondary-block-desc">
+              Authoritative database reset options for tournament administrators.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleResetAttemptsKeepParticipants}
+                style={{
+                  borderColor: '#F59E0B',
+                  color: '#F59E0B',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                }}
+                title="Wipe round submissions and test answers while keeping all registered participants"
+              >
+                <Icon name="refresh-cw" size={15} />
+                <span>Keep Participants & Reset Attempts</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleResetAllParticipantsAndAttempts}
+                style={{
+                  borderColor: '#EF4444',
+                  color: '#EF4444',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                }}
+                title="Purge all participants, submissions, and qualifications from the database"
+              >
+                <Icon name="trash" size={15} />
+                <span>Reset Participants Entry & Attempts</span>
               </button>
             </div>
           </div>

@@ -667,3 +667,46 @@ export function purgeAllTournamentData(): void {
   window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 2 } }));
   window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 3 } }));
 }
+
+/**
+ * Clears all attempts, answer sheets, scores, and qualification records,
+ * while keeping participant registrations intact.
+ */
+export function clearAllAttemptsOnly(): void {
+  try {
+    localStorage.removeItem(KEY_SUBMISSIONS);
+    localStorage.removeItem(KEY_QUALIFICATIONS);
+    localStorage.removeItem(KEY_CLEARED_ROUNDS);
+  } catch (err) {
+    console.error('Failed removing attempt storage keys:', err);
+  }
+  serverLeaderboard = [];
+
+  const tournamentPrefixes = [
+    'bb_progress_',
+    'bb_answers_',
+    'bb_marked_',
+    'bb_submitted_',
+    'bb_score_',
+    'bb_review_',
+    'bb_attempt_id_',
+  ];
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && tournamentPrefixes.some((p) => k.startsWith(p))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (err) {
+    console.error('Failed clearing attempt storage prefixes:', err);
+  }
+
+  window.dispatchEvent(new Event('bb_storage_sync'));
+  window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 1 } }));
+  window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 2 } }));
+  window.dispatchEvent(new CustomEvent('bb_round_reset', { detail: { roundId: 3 } }));
+}
+

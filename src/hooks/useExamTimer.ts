@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 
 interface UseExamTimerOptions {
-  /** Full round length, shown until the server attempt (and its deadline) is known */
+  /** Full round length in seconds */
   durationSeconds: number;
   isRunning?: boolean;
   /** Authoritative deadline (epoch ms) from the server attempt's deadline_at */
   deadlineMs?: number | null;
-  /** serverNow - clientNow (ms), so the countdown does not depend on the participant's own clock */
+  /** serverNow - clientNow (ms), so countdown is synchronized */
   clockOffsetMs?: number;
   onExpire: () => void;
 }
 
 /**
- * Countdown driven by the server-issued deadline.
- * Before the deadline is known the full duration is shown and nothing runs.
+ * High-precision countdown timer formatted as MM:SS.mmm
+ * Seamlessly transitions between client-side fallback and server-authoritative deadline.
+ * Ensures Round 1, 2, and 3 timers never freeze, and updates with millisecond precision.
  */
 export function useExamTimer({
   durationSeconds,
@@ -26,41 +27,66 @@ export function useExamTimer({
   const onExpireRef = useRef(onExpire);
   const hasExpiredRef = useRef(false);
 
+  // Local fallback deadline so timer starts ticking immediately upon mount
+  const fallbackDeadlineRef = useRef<number>(Date.now() + durationSeconds * 1000);
+
   useEffect(() => {
     onExpireRef.current = onExpire;
   }, [onExpire]);
 
+  // If durationSeconds changes or a fresh round starts without a deadline yet, update fallback
   useEffect(() => {
-    if (!isRunning || deadlineMs === null) return;
-    const intervalId = setInterval(() => setNow(Date.now()), 500);
+    if (!deadlineMs) {
+      fallbackDeadlineRef.current = Date.now() + durationSeconds * 1000;
+    }
+  }, [durationSeconds, deadlineMs]);
+
+  // High-frequency tick (~33ms, approx 30fps) for smooth millisecond updates
+  useEffect(() => {
+    if (!isRunning) return;
+    const intervalId = setInterval(() => {
+      setNow(Date.now());
+    }, 33);
     return () => clearInterval(intervalId);
-  }, [isRunning, deadlineMs]);
+  }, [isRunning]);
 
-  const secondsRemaining =
-    deadlineMs === null
-      ? durationSeconds
-      : Math.max(0, Math.ceil((deadlineMs - (now + clockOffsetMs)) / 1000));
+  // Determine active deadline: Authoritative server deadline if valid number, else local fallback
+  const isServerDeadlineValid = typeof deadlineMs === 'number' && !isNaN(deadlineMs) && deadlineMs > 0;
+  const targetDeadline = isServerDeadlineValid ? deadlineMs : fallbackDeadlineRef.current;
+  const effectiveNow = now + (isServerDeadlineValid ? clockOffsetMs : 0);
+  const remainingMs = Math.max(0, targetDeadline - effectiveNow);
+  const secondsRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
 
   useEffect(() => {
-    if (deadlineMs === null || !isRunning) return;
-    if (secondsRemaining <= 0 && !hasExpiredRef.current) {
+    if (!isRunning) return;
+    if (remainingMs <= 0 && !hasExpiredRef.current) {
       hasExpiredRef.current = true;
       onExpireRef.current();
-    } else if (secondsRemaining > 0) {
+    } else if (remainingMs > 0) {
       hasExpiredRef.current = false;
     }
-  }, [deadlineMs, isRunning, secondsRemaining]);
+  }, [isRunning, remainingMs]);
 
-  const formatTime = (totalSec: number = secondsRemaining) => {
-    const safeSec = Math.max(0, totalSec);
-    const minutes = Math.floor(safeSec / 60);
-    const seconds = safeSec % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  // Format as MM:SS.mmm (Minutes : Seconds . Milliseconds)
+  const formatTime = (valMsOrSec?: number) => {
+    let safeMs: number;
+    if (valMsOrSec === undefined) {
+      safeMs = remainingMs;
+    } else if (valMsOrSec > 36000) {
+      safeMs = Math.max(0, valMsOrSec);
+    } else {
+      safeMs = Math.max(0, Math.round(valMsOrSec * 1000));
+    }
+    const minutes = Math.floor(safeMs / 60000);
+    const seconds = Math.floor((safeMs % 60000) / 1000);
+    const millis = safeMs % 1000;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
   };
 
   return {
+    remainingMs,
     secondsRemaining,
-    formattedTime: formatTime(secondsRemaining),
+    formattedTime: formatTime(remainingMs),
     formatTime,
   };
 }

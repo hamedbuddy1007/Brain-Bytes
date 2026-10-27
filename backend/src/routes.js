@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query, withTransaction } from './db.js';
@@ -643,8 +643,8 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
            incorrect_count=$4,
            unanswered_count=$5,
            time_taken_seconds=LEAST(
-             GREATEST(1, FLOOR(EXTRACT(EPOCH FROM (deadline_at - started_at)))),
-             GREATEST(1, FLOOR(EXTRACT(EPOCH FROM (NOW() - started_at))))
+             ROUND(EXTRACT(EPOCH FROM (deadline_at - started_at))::numeric, 3),
+             GREATEST(0.001, ROUND(EXTRACT(EPOCH FROM (NOW() - started_at))::numeric, 3))
            )
          WHERE id=$1 AND submitted_at IS NULL
          RETURNING score, correct_count, incorrect_count, unanswered_count, time_taken_seconds`,
@@ -968,7 +968,14 @@ router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, ne
     const limit = Number(req.body?.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 200) return res.status(400).json({ error: 'Qualification limit must be between 1 and 200.' });
     const result = await query(
-      `SELECT a.participant_id, a.score, a.time_taken_seconds FROM attempts a WHERE a.round_id=$1 AND a.submitted_at IS NOT NULL ORDER BY a.score DESC, a.time_taken_seconds ASC, a.participant_id ASC LIMIT $2`,
+      `SELECT a.participant_id, a.score, a.time_taken_seconds,
+              COALESCE(a.time_taken_seconds, ROUND(EXTRACT(EPOCH FROM (a.submitted_at - a.started_at))::numeric, 3)) AS completion_time
+       FROM attempts a
+       WHERE a.round_id=$1 AND a.submitted_at IS NOT NULL
+       ORDER BY a.score DESC,
+                COALESCE(a.time_taken_seconds, ROUND(EXTRACT(EPOCH FROM (a.submitted_at - a.started_at))::numeric, 3)) ASC,
+                a.participant_id ASC
+       LIMIT $2`,
       [roundId, limit],
     );
     const eventType = `round${roundId + 1}.qualified`;
@@ -980,7 +987,12 @@ router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, ne
           'system',
           row.participant_id,
           eventType,
-          JSON.stringify({ participantId: row.participant_id, sourceRound: roundId, score: row.score }),
+          JSON.stringify({
+            participantId: row.participant_id,
+            sourceRound: roundId,
+            score: row.score,
+            timeTakenSeconds: Number(row.completion_time ?? row.time_taken_seconds ?? 0),
+          }),
         ]);
       }
       await client.query('INSERT INTO audit_events(actor_type,actor_id,event_type,details) VALUES($1,$2,$3,$4)', [
@@ -1129,12 +1141,34 @@ router.post('/admin/rounds/:roundId/reset', requireAuth('admin'), async (req, re
   }
 });
 
+router.post('/admin/reset-attempts', requireAuth('admin'), async (req, res, next) => {
+  try {
+    let deletedCount = 0;
+    await withTransaction(async (client) => {
+      await client.query('DELETE FROM answers');
+      const deleted = await client.query('DELETE FROM attempts RETURNING id');
+      deletedCount = deleted.rowCount || 0;
+      await client.query("DELETE FROM audit_events WHERE event_type LIKE 'round%' OR event_type LIKE 'qualification%' OR event_type LIKE 'proctor%'");
+      await client.query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES($1, $2, $3, $4)', [
+        'admin',
+        req.auth.id,
+        'attempts.reset_all',
+        JSON.stringify({ timestamp: new Date().toISOString(), deletedAttempts: deletedCount }),
+      ]);
+    });
+    res.json({ success: true, message: `All attempts (${deletedCount}) have been reset. Registered participants are retained.`, deletedAttempts: deletedCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/admin/reset-all', requireAuth('admin'), async (req, res, next) => {
   try {
     await withTransaction(async (client) => {
+      await client.query('DELETE FROM answers');
       await client.query('DELETE FROM attempts');
       await client.query('DELETE FROM participants');
-      await client.query("DELETE FROM audit_events WHERE actor_type = 'participant' OR event_type LIKE 'round%'");
+      await client.query("DELETE FROM audit_events WHERE actor_type = 'participant' OR event_type LIKE 'round%' OR event_type LIKE 'qualification%' OR event_type LIKE 'proctor%'");
       await client.query(`
         UPDATE competition_state SET
           status = 'NOT_STARTED',
@@ -1150,8 +1184,9 @@ router.post('/admin/reset-all', requireAuth('admin'), async (req, res, next) => 
         JSON.stringify({ timestamp: new Date().toISOString() }),
       ]);
     });
-    res.json({ message: 'Competition state and participant attempts fully reset.' });
+    res.json({ success: true, message: 'All participant registrations, round attempts, and audit logs have been completely reset.' });
   } catch (error) {
     next(error);
   }
 });
+
