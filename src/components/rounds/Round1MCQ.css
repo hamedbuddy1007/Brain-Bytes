@@ -1352,54 +1352,279 @@
 }
 
 /* --------------------------------------------------------------------------
-   RESPONSIVENESS
+/* --------------------------------------------------------------------------
+   RESPONSIVENESS (Exam Cockpit for Rounds 1, 2 & 3)
+   Desktop layout (> 1080px) is strictly preserved.
    -------------------------------------------------------------------------- */
 @media (max-width: 1080px) {
   .stitch-main-layout {
     flex-direction: column;
     padding: 16px;
+    gap: 20px;
+  }
+
+  /* Position Question Cockpit FIRST on tablet & mobile */
+  .stitch-cockpit-stage {
+    order: 1;
+    width: 100%;
   }
 
   .stitch-palette-card {
+    order: 2;
     width: 100%;
+    max-height: 360px;
+    overflow-y: auto;
   }
 
   .palette-nodes-grid {
     grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
   }
 
   .palette-node-btn {
     aspect-ratio: 1 / 1;
+    min-height: 40px;
   }
 }
 
 @media (max-width: 768px) {
   .stitch-header-bar {
-    padding: 12px 16px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
-  .palette-nodes-grid {
-    grid-template-columns: repeat(5, 1fr);
-  }
-
-  .question-meta-top-row,
-  .question-sub-meta-row,
-  .exam-actions-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actions-left-group,
-  .actions-mid-group {
-    flex-direction: column;
-  }
-
-  .btn-save-next-prominent {
+  .stitch-header-left {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
-    justify-content: center;
+    gap: 8px;
+  }
+
+  .stitch-brand-logo {
+    font-size: 1rem;
+  }
+
+  .stitch-brand-sub {
+    display: none;
+  }
+
+  .stitch-round-pill {
+    margin-left: 0;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .stitch-header-right {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
   }
 
   .meta-divider {
     display: none;
+  }
+
+  .header-user-avatar {
+    display: none;
+  }
+
+  .header-meta-group {
+    font-size: 0.75rem;
+  }
+
+  .meta-group-val.val-timer {
+    font-size: 1.05rem;
+    color: #F43F5E;
+    font-weight: 800;
+  }
+
+  .header-btn-exit {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+
+  .stitch-main-layout {
+    padding: 10px 8px;
+    gap: 14px;
+  }
+
+  .stitch-cockpit-stage {
+    padding: 0;
+    gap: 14px;
+  }
+
+  .question-framing-box {
+    padding: 16px 14px;
+    border-radius: 12px;
+  }
+
+  .question-prompt-text {
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  .question-domain-line {
+    font-size: 0.72rem;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .question-options-list {
+    gap: 10px;
+  }
+
+  .stitch-option-row {
+    padding: 12px 14px;
+    min-height: 50px;
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .option-key-box {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .option-main-label {
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  /* Graph visualizer for Round 2 */
+  .graph-challenge-container {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 4px;
+  }
+
+  /* Sensor bar */
+  .proctor-sensors-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.72rem;
+    padding: 8px 12px;
+  }
+
+  /* Action buttons bar */
+  .exam-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .actions-left-group {
+    width: 100%;
+    display: flex;
+  }
+
+  .actions-left-group .btn-terminal-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .actions-mid-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .actions-mid-group .btn-terminal-action {
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .actions-right-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-save-next-prominent,
+  .btn-terminal-submit,
+  .btn-save-action {
+    width: 100%;
+    justify-content: center;
+    padding: 13px;
+    font-size: 0.92rem;
+  }
+
+  /* Palette */
+  .palette-nodes-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .palette-node-btn {
+    min-height: 38px;
+    font-size: 0.78rem;
+    border-radius: 6px;
+  }
+
+  /* Modals */
+  .stitch-modal-card {
+    width: 92%;
+    max-width: 440px;
+    padding: 22px 18px;
+    border-radius: 16px;
+  }
+
+  /* Diagnostic review view */
+  .result-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .result-score-hero {
+    padding: 24px 16px;
+  }
+
+  .result-q-item {
+    padding: 14px 12px;
+  }
+
+  .result-q-head {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .palette-nodes-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .palette-node-btn {
+    min-height: 36px;
+    font-size: 0.74rem;
+  }
+
+  .sys-tag-badge {
+    display: none;
+  }
+
+  .stitch-option-row {
+    padding: 10px 12px;
+  }
+
+  .option-key-box {
+    width: 28px;
+    height: 28px;
+    font-size: 0.78rem;
   }
 }

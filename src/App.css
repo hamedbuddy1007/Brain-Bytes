@@ -473,6 +473,7 @@
 .gradient-text-solar {
   background: linear-gradient(135deg, var(--accent-molten) 0%, var(--accent-gold) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -3448,6 +3449,7 @@
   color: var(--maroon-primary);
   background: linear-gradient(135deg, #A42B45 0%, #B94B68 50%, #FFFFFF 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1;
   margin: 0;
@@ -5791,6 +5793,7 @@
 .title-highlight {
   background: linear-gradient(135deg, #FB7185 0%, #E11D48 50%, #9F1239 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -7351,6 +7354,427 @@
 
 .home-pill-signout:hover {
   color: #EF4444;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVENESS OVERRIDES
+   Guaranteed non-breaking for desktop/laptop displays (> 1024px)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TABLET SCREENS (769px to 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  /* Navigation Bar */
+  .home-nav-container,
+  .arena-header-container {
+    padding: 0 8px;
+    gap: 12px;
+  }
+
+  .home-nav-actions {
+    gap: 8px;
+  }
+
+  .btn-glass-nav {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Homepage Hero & Content */
+  .home-hero-section {
+    padding: 56px 20px 48px;
+  }
+
+  .hero-display-title {
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+  }
+
+  .hero-kpi-strip {
+    gap: 18px;
+    padding: 14px 20px;
+  }
+
+  .rounds-intro-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  /* Arena Cockpit */
+  .arena-tabs-nav {
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .arena-tab-item {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .tab-icon-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tab-round-title {
+    font-size: 0.85rem;
+  }
+
+  .arena-stage-cockpit {
+    padding: 28px 24px;
+    gap: 22px;
+  }
+
+  .stage-spec-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. MOBILE & SMALL TABLET SCREENS (<= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Global viewport protection */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+
+  /* Home Navigation */
+  .home-navbar {
+    padding: 10px 14px;
+  }
+
+  .home-nav-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .home-brand {
+    justify-content: center;
+  }
+
+  .home-nav-actions {
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-glass-nav {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .home-active-user-pill {
+    width: 100%;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* Home Hero Section */
+  .home-hero-section {
+    padding: 36px 16px 36px;
+  }
+
+  .hero-pill-badge {
+    font-size: 0.68rem;
+    padding: 4px 12px;
+    margin-bottom: 16px;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .hero-display-title {
+    font-size: clamp(1.8rem, 6.5vw, 2.6rem);
+    margin-bottom: 14px;
+  }
+
+  .hero-lead-text {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .btn-hero-primary,
+  .btn-hero-secondary,
+  .btn-hero-ghost {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 20px;
+    font-size: 0.92rem;
+    box-sizing: border-box;
+  }
+
+  .hero-kpi-strip {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    box-sizing: border-box;
+  }
+
+  .kpi-strip-divider {
+    width: 48px;
+    height: 1px;
+  }
+
+  .kpi-strip-item {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Home Rounds Section */
+  .home-rounds-section {
+    padding: 40px 16px;
+  }
+
+  .section-header-block {
+    margin-bottom: 30px;
+  }
+
+  .section-hero-heading {
+    font-size: 1.65rem;
+  }
+
+  .section-desc {
+    font-size: 0.88rem;
+  }
+
+  .rounds-intro-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .round-intro-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  /* Login Page */
+  .login-page-root {
+    padding: 0;
+  }
+
+  .login-top-bar {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .login-card-wrapper {
+    width: 92%;
+    max-width: 440px;
+    margin: 16px auto;
+    padding: 26px 18px;
+    border-radius: 18px;
+  }
+
+  .login-main-heading {
+    font-size: 1.5rem;
+  }
+
+  .login-card-desc {
+    font-size: 0.85rem;
+  }
+
+  .access-code-input {
+    font-size: 1.25rem !important;
+    letter-spacing: 0.15em !important;
+    padding: 12px 14px !important;
+  }
+
+  .btn-login-submit {
+    padding: 13px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* Registration Page */
+  .registration-page-root {
+    padding: 0;
+  }
+
+  .reg-top-bar {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .reg-card-wrapper {
+    width: 92%;
+    max-width: 460px;
+    margin: 16px auto;
+    padding: 24px 16px;
+    border-radius: 18px;
+  }
+
+  .reg-main-heading {
+    font-size: 1.5rem;
+  }
+
+  .reg-form-grid,
+  .form-row-2col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .btn-reg-submit {
+    padding: 13px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* Arena Cockpit */
+  .arena-top-header {
+    padding: 10px 14px;
+  }
+
+  .arena-header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .arena-header-left {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .arena-header-right {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .arena-user-cluster {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .arena-candidate-badge {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .candidate-info {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .arena-hero-banner {
+    padding: 0 8px;
+  }
+
+  .arena-main-heading {
+    font-size: 1.7rem;
+  }
+
+  .arena-sub-heading {
+    font-size: 0.86rem;
+  }
+
+  .arena-tabs-nav {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .arena-tab-item {
+    padding: 12px 14px;
+  }
+
+  .arena-stage-cockpit {
+    padding: 20px 14px;
+    border-radius: 16px;
+    gap: 18px;
+  }
+
+  .stage-cockpit-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .stage-main-title {
+    font-size: 1.6rem;
+  }
+
+  .stage-spec-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .spec-card {
+    padding: 12px 14px;
+  }
+
+  .btn-stage-action {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. SMALL MOBILE PHONES (<= 480px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .home-nav-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-nav-admin {
+    grid-column: span 2;
+  }
+
+  .hero-display-title {
+    font-size: 1.75rem;
+  }
+
+  .login-card-wrapper,
+  .reg-card-wrapper {
+    width: 95%;
+    padding: 20px 14px;
+  }
+
+  .arena-brand-tag {
+    display: none;
+  }
+
+  .arena-title-divider {
+    display: none;
+  }
+
+  .arena-user-cluster {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .arena-signout-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 
