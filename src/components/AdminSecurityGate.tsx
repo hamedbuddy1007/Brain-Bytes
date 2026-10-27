@@ -122,13 +122,21 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
         <div className="admin-login-card">
           {/* Card Top Brand & Icon */}
           <div className="admin-login-header">
-            <div className="admin-brand-icon-box">
-              <Icon name="brain" size={24} className="admin-brand-brain-svg" />
-            </div>
-
-            <div className="admin-brand-title-row">
-              <span className="admin-brand-name">BRAIN BYTES</span>
-            </div>
+            <button
+              type="button"
+              className="admin-login-brand-btn"
+              onClick={onReturnToLanding}
+              title="Brain Bytes - Return to Landing Page"
+            >
+              <img
+                src="/brand-logo.png"
+                alt="Brain Bytes Logo"
+                className="admin-login-brand-logo-img"
+              />
+              <div className="admin-brand-title-row">
+                <span className="admin-brand-name">BRAIN BYTES</span>
+              </div>
+            </button>
 
             <h1 className="admin-card-heading">Admin Login</h1>
             <p className="admin-card-subheading">Sign in to manage the competition</p>

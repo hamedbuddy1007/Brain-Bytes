@@ -106,15 +106,24 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Top Glass Navigation Bar */}
       <header className="home-navbar">
         <div className="home-nav-container">
-          <div className="home-brand">
-            <div className="home-brand-icon">
-              <Icon name="brain" size={24} />
-            </div>
+          <button
+            type="button"
+            className="home-brand"
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            title="Brain Bytes - Return to Top of Landing Page"
+          >
+            <img
+              src="/brand-logo.png"
+              alt="Brain Bytes Emblem Logo"
+              className="home-brand-logo-img"
+            />
             <div className="home-brand-text">
               <span className="home-event-kicker">DATA MANIA</span>
               <span className="home-event-title">BRAIN BYTES</span>
             </div>
-          </div>
+          </button>
 
           <div className="home-nav-actions">
             {activeParticipant ? (

@@ -572,6 +572,7 @@ export function App() {
             onResetParticipants={handleResetParticipants}
             onResetRounds={handleResetRounds}
             onReturnToArena={() => navigateToView('arena')}
+            onReturnToLanding={() => navigateToView('home')}
             onOpenProjector={() => navigateToView('projector')}
             onSignOut={async () => {
               await terminateAdminSession();

@@ -78,13 +78,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <span>Back to Home</span>
         </button>
 
-        <div className="login-header-brand">
-          <div className="brand-icon-box">
-            <Icon name="brain" size={18} />
+        <button
+          type="button"
+          onClick={onBackToHome}
+          className="login-header-brand-btn"
+          id="btn-login-brand-home"
+          title="Brain Bytes - Return to Landing Page"
+        >
+          <img
+            src="/brand-logo.png"
+            alt="Brain Bytes Logo"
+            className="login-brand-logo-img"
+          />
+          <div className="login-brand-text-block">
+            <span className="brand-kicker">DATA MANIA</span>
+            <span className="brand-name">BRAIN BYTES</span>
           </div>
-          <span className="brand-dot" />
-          <span className="brand-name">DATA MANIA • BRAIN BYTES 2026</span>
-        </div>
+        </button>
       </header>
 
       {/* Main Login Card Section */}

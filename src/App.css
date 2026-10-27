@@ -4852,14 +4852,58 @@
   transform: translateX(-2px);
 }
 
+.reg-header-brand-btn,
 .reg-header-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #94A3B8;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.reg-header-brand-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.reg-header-brand-btn:hover .reg-brand-logo-img {
+  transform: scale(1.06);
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.65);
+}
+
+.reg-brand-logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 14px rgba(142, 35, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.reg-brand-text-block {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.reg-brand-text-block .brand-kicker {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: #FB7185;
+}
+
+.reg-brand-text-block .brand-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
 }
 
 .brand-dot {
@@ -5613,19 +5657,35 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s ease;
+  text-decoration: none;
 }
 
-.home-brand-icon {
-  width: 42px;
-  height: 42px;
+.home-brand:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.home-brand:hover .home-brand-logo-img {
+  transform: scale(1.06);
+  box-shadow: 0 0 25px rgba(225, 29, 72, 0.65), 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.home-brand-logo-img {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(142, 35, 59, 0.7), rgba(185, 75, 104, 0.3));
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  box-shadow: 0 0 20px rgba(142, 35, 59, 0.4);
+  object-fit: cover;
+  box-shadow: 0 0 16px rgba(142, 35, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 }
 
 .home-brand-text {
@@ -6389,6 +6449,42 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.arena-brand-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.arena-brand-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.arena-brand-nav-btn:hover .arena-brand-logo-img {
+  transform: scale(1.06);
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.65);
+}
+
+.arena-brand-logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 14px rgba(142, 35, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.arena-brand-titles,
 .arena-brand-tag {
   display: flex;
   flex-direction: column;
@@ -6998,15 +7094,58 @@
   z-index: 20;
 }
 
+.login-header-brand-btn,
 .login-header-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #E2E8F0;
-  text-transform: uppercase;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.login-header-brand-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.login-header-brand-btn:hover .login-brand-logo-img {
+  transform: scale(1.06);
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.65);
+}
+
+.login-brand-logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 14px rgba(142, 35, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.login-brand-text-block {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.login-brand-text-block .brand-kicker {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: #FB7185;
+}
+
+.login-brand-text-block .brand-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
 }
 
 .login-header-brand .brand-icon-box {

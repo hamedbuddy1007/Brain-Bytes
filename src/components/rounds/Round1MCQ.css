@@ -75,6 +75,39 @@
   letter-spacing: 0.08em;
 }
 
+.stitch-brand-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  margin: -4px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.stitch-brand-header-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stitch-brand-header-btn:hover .stitch-brand-logo-img {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
+}
+
+.stitch-brand-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(142, 35, 59, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
 .stitch-brand-logo {
   font-size: 1.15rem;
   font-weight: 900;

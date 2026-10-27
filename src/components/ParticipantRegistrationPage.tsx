@@ -156,10 +156,23 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
           <span>Back to Arena Home</span>
         </button>
 
-        <div className="reg-header-brand">
-          <span className="brand-dot" />
-          <span>DATA MANIA • BRAIN BYTES 2026</span>
-        </div>
+        <button
+          type="button"
+          onClick={onBackToHome}
+          className="reg-header-brand-btn"
+          id="btn-reg-brand-home"
+          title="Brain Bytes - Return to Landing Page"
+        >
+          <img
+            src="/brand-logo.png"
+            alt="Brain Bytes Logo"
+            className="reg-brand-logo-img"
+          />
+          <div className="reg-brand-text-block">
+            <span className="brand-kicker">DATA MANIA</span>
+            <span className="brand-name">BRAIN BYTES</span>
+          </div>
+        </button>
       </header>
 
       <main className="reg-content-container">

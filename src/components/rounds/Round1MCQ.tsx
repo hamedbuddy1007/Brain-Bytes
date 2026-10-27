@@ -825,9 +825,24 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
       <div className="stitch-exam-root">
         <header className="stitch-header-bar">
           <div className="stitch-header-left">
+            <button
+              type="button"
+              className="stitch-brand-header-btn"
+              onClick={() => {
+                window.location.hash = '#/';
+                window.dispatchEvent(new HashChangeEvent('hashchange'));
+              }}
+              title="Brain Bytes - Return to Landing Page"
+            >
+              <img
+                src="/brand-logo.png"
+                alt="Brain Bytes Logo"
+                className="stitch-brand-logo-img"
+              />
+              <span className="stitch-brand-logo">BRAIN BYTES</span>
+              <span className="stitch-brand-sub">// DATA MANIA</span>
+            </button>
             <span className="sys-tag-badge">[SYS_01]</span>
-            <span className="stitch-brand-logo">BRAIN BYTES</span>
-            <span className="stitch-brand-sub">// DATA MANIA</span>
             <div className="stitch-round-pill">
               <span className="pill-dot" />
               <span className="pill-text">ROUND 1   COMPLETED</span>
@@ -1026,9 +1041,26 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
          ---------------------------------------------------------------------- */}
       <header className="stitch-header-bar">
         <div className="stitch-header-left">
+          <button
+            type="button"
+            className="stitch-brand-header-btn"
+            onClick={() => {
+              if (window.confirm("Return to the Brain Bytes landing page? Your submitted answers and timer are saved on the server.")) {
+                window.location.hash = '#/';
+                window.dispatchEvent(new HashChangeEvent('hashchange'));
+              }
+            }}
+            title="Brain Bytes - Return to Landing Page"
+          >
+            <img
+              src="/brand-logo.png"
+              alt="Brain Bytes Logo"
+              className="stitch-brand-logo-img"
+            />
+            <span className="stitch-brand-logo">BRAIN BYTES</span>
+            <span className="stitch-brand-sub">// DATA MANIA</span>
+          </button>
           <span className="sys-tag-badge">[SYS_01]</span>
-          <span className="stitch-brand-logo">BRAIN BYTES</span>
-          <span className="stitch-brand-sub">// DATA MANIA</span>
 
           <div className="stitch-round-pill">
             <span className="pill-dot" />

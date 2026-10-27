@@ -138,6 +138,24 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
             <button
               type="button"
               onClick={onBackToHome}
+              className="arena-brand-nav-btn"
+              id="btn-arena-brand-home"
+              title="Brain Bytes - Return to Landing Page"
+            >
+              <img
+                src="/brand-logo.png"
+                alt="Brain Bytes Logo"
+                className="arena-brand-logo-img"
+              />
+              <div className="arena-brand-titles">
+                <span className="arena-brand-kicker">DATA MANIA</span>
+                <span className="arena-brand-title">BRAIN BYTES</span>
+              </div>
+            </button>
+            <div className="arena-title-divider" />
+            <button
+              type="button"
+              onClick={onBackToHome}
               className="arena-back-btn"
               id="btn-arena-back-home"
               title="Return to Landing Page"
@@ -145,11 +163,6 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
               <Icon name="arrow-left" size={16} />
               <span>Back to Home</span>
             </button>
-            <div className="arena-title-divider" />
-            <div className="arena-brand-tag">
-              <span className="arena-brand-kicker">COMPETITION ARENA</span>
-              <span className="arena-brand-title">GAME TABS</span>
-            </div>
           </div>
 
           <div className="arena-header-right">

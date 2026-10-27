@@ -151,12 +151,29 @@ export const AdminProjectorDisplay: React.FC<AdminProjectorDisplayProps> = ({
     <div className="projector-stage-root">
       {/* Top Stream Strip */}
       <header className="projector-top-strip">
-        <div className="projector-brand-header">
+        <button
+          type="button"
+          className="projector-brand-header-btn"
+          onClick={() => {
+            if (onReturnToArena) {
+              onReturnToArena();
+            } else {
+              window.location.hash = '#/';
+              window.dispatchEvent(new HashChangeEvent('hashchange'));
+            }
+          }}
+          title="Brain Bytes - Return to Landing Page"
+        >
+          <img
+            src="/brand-logo.png"
+            alt="Brain Bytes Logo"
+            className="projector-brand-logo-img"
+          />
           <span className="projector-live-indicator-dot" />
           <span className="projector-stream-title">Brain Bytes • Live Leaderboard Broadcast</span>
           <span className="projector-stream-sep">•</span>
           <span className="projector-stream-tag">Auditorium Display Feed</span>
-        </div>
+        </button>
 
         <div className="projector-top-actions">
           <div className="projector-live-clock">{clockStr}</div>

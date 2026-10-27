@@ -250,10 +250,43 @@
   gap: 14px;
 }
 
+.admin-header-brand-btn,
 .admin-header-brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 8px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.admin-header-brand-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-header-brand-btn:hover .admin-header-logo-img {
+  transform: scale(1.06);
+  box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
+}
+
+.admin-header-logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 12px rgba(142, 35, 59, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-header-brand-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-header-logo-badge {
@@ -1533,12 +1566,39 @@
   gap: 14px;
 }
 
+.projector-brand-header-btn,
 .projector-brand-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 0.88rem;
   font-weight: 600;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.projector-brand-header-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.projector-brand-header-btn:hover .projector-brand-logo-img {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
+}
+
+.projector-brand-logo-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .projector-live-indicator-dot {

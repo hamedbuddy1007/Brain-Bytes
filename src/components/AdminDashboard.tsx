@@ -21,6 +21,7 @@ interface AdminDashboardProps {
   onReturnToArena: () => void;
   onOpenProjector: () => void;
   onSignOut?: () => void;
+  onReturnToLanding?: () => void;
 }
 
 
@@ -42,6 +43,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onReturnToArena,
   onOpenProjector,
   onSignOut,
+  onReturnToLanding,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const r1Active = settings.roundStates[1] === 'active';
@@ -175,13 +177,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Simplified Header: Branding, Status, Current Round, Projector, Admin Profile */}
         <header className="admin-top-bar">
           <div className="admin-top-left">
-            <div className="admin-header-brand">
-              <span className="admin-header-logo-badge">BB</span>
-              <div>
+            <button
+              type="button"
+              className="admin-header-brand-btn"
+              onClick={onReturnToLanding || onReturnToArena}
+              title="Brain Bytes - Return to Landing Page"
+            >
+              <img
+                src="/brand-logo.png"
+                alt="Brain Bytes Logo"
+                className="admin-header-logo-img"
+              />
+              <div className="admin-header-brand-text">
                 <span className="admin-header-title">Brain Bytes Control Center</span>
                 <span className="admin-header-subtitle">Data Mania Championship</span>
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="admin-top-right">
