@@ -52,7 +52,23 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     r1Completed: number;
     r2Completed: number;
     r3Completed: number;
+    r2Qualified?: number;
+    r3Qualified?: number;
   } | null>(null);
+
+  // Qualification State & Modal
+  const [qualifyModal, setQualifyModal] = useState<{
+    isOpen: boolean;
+    sourceRound: 1 | 2;
+    limit: number;
+    completedCount: number;
+  }>({
+    isOpen: false,
+    sourceRound: 1,
+    limit: 50,
+    completedCount: 0,
+  });
+  const [isQualifying, setIsQualifying] = useState(false);
 
   useEffect(() => {
     if (!resetToast) return;
@@ -80,6 +96,8 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
         r1Completed: number;
         r2Completed: number;
         r3Completed: number;
+        r2Qualified?: number;
+        r3Qualified?: number;
       }>('/admin/overview-stats')
         .then((data) => {
           if (active && data) setDbStats(data);
@@ -153,6 +171,67 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
     description: '',
     onConfirm: () => { },
   });
+
+  const handleOpenQualify = (sourceRound: 1 | 2) => {
+    const completedCount = sourceRound === 1
+      ? (dbStats?.r1Completed ?? submissions.filter((s) => s.roundId === 1).length)
+      : (dbStats?.r2Completed ?? submissions.filter((s) => s.roundId === 2).length);
+
+    const defaultLimit = sourceRound === 1
+      ? Math.max(1, Math.min(completedCount || 50, 200))
+      : Math.max(1, Math.min(completedCount || 8, 200));
+
+    setQualifyModal({
+      isOpen: true,
+      sourceRound,
+      limit: defaultLimit,
+      completedCount,
+    });
+  };
+
+  const handleExecuteQualify = async () => {
+    if (isQualifying) return;
+    setIsQualifying(true);
+    try {
+      const res = await apiRequest<{
+        sourceRound: number;
+        nextRound: number;
+        qualifiedCount: number;
+        qualifiedParticipantIds: number[];
+      }>(`/admin/qualify/${qualifyModal.sourceRound}`, {
+        method: 'POST',
+        body: JSON.stringify({ limit: qualifyModal.limit }),
+      });
+
+      setQualifyModal((prev) => ({ ...prev, isOpen: false }));
+      setResetToast({
+        message: `Successfully qualified ${res.qualifiedCount} candidates for Round ${res.nextRound}! They are now authorized in the database to enter and submit Round ${res.nextRound}.`,
+        roundId: qualifyModal.sourceRound,
+      });
+
+      // Refresh overview stats immediately
+      apiRequest<{
+        totalParticipants: number;
+        activeAttempts: number;
+        completedAttempts: number;
+        r1Completed: number;
+        r2Completed: number;
+        r3Completed: number;
+        r2Qualified?: number;
+        r3Qualified?: number;
+      }>('/admin/overview-stats').then((data) => {
+        if (data) setDbStats(data);
+      }).catch(() => {});
+
+      if (onLogAudit) {
+        onLogAudit(`Admin executed qualification for Round ${qualifyModal.sourceRound}: ${res.qualifiedCount} promoted to Round ${res.nextRound} (limit ${qualifyModal.limit})`);
+      }
+    } catch (err: unknown) {
+      alert(`Qualification failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsQualifying(false);
+    }
+  };
 
   const handleCompleteRound = (roundId: 1 | 2 | 3) => {
     const isAlreadyCompleted = settings.roundStates[roundId] === 'completed';
@@ -537,6 +616,27 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
             </div>
 
             <div className="reset-bar-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {(selectedRound === 1 || selectedRound === 2) && (
+                <button
+                  type="button"
+                  className="btn btn-promote-qualifiers"
+                  onClick={() => handleOpenQualify(selectedRound)}
+                  id="btn-qualify-selected-round"
+                  style={{
+                    background: 'linear-gradient(135deg, #8E233B 0%, #B94B68 100%)',
+                    color: '#FFFFFF',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontWeight: 700,
+                  }}
+                  title={`Execute qualification for Round ${selectedRound + 1}`}
+                >
+                  <Icon name="award" size={15} />
+                  <span>Qualify for Round {selectedRound + 1}</span>
+                </button>
+              )}
               <button
                 type="button"
                 className={`btn ${settings.roundStates[selectedRound] === 'completed' ? 'btn-success-outline' : 'btn-success'}`}
@@ -586,6 +686,12 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
                   {r1SubmissionsCount} verified submissions
                 </span>
               </div>
+              <div className="meta-list-item">
+                <span className="meta-item-label">Round 2 Qualifiers:</span>
+                <span className="meta-item-value" style={{ color: (dbStats?.r2Qualified ?? 0) > 0 ? '#22C55E' : '#F59E0B', fontWeight: 700 }}>
+                  {dbStats?.r2Qualified ? `${dbStats.r2Qualified} candidates promoted` : 'Pending Qualification'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -598,6 +704,25 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               >
                 <Icon name={r1State === 'active' ? 'lock' : 'play'} size={15} />
                 <span>{r1State === 'active' ? 'Lock Round 1 Entry' : 'Start Round 1'}</span>
+              </button>
+              <button
+                type="button"
+                className="btn w-full btn-promote-qualifiers"
+                onClick={() => handleOpenQualify(1)}
+                style={{
+                  background: 'linear-gradient(135deg, #8E233B 0%, #B94B68 100%)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 700,
+                }}
+                title="Promote top Round 1 participants to qualify for Round 2"
+              >
+                <Icon name="award" size={15} />
+                <span>{dbStats?.r2Qualified ? `Re-Qualify for Round 2 (${dbStats.r2Qualified})` : 'Qualify Candidates for Round 2'}</span>
               </button>
               <button
                 type="button"
@@ -644,6 +769,12 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
                   {r2SubmissionsCount} verified submissions
                 </span>
               </div>
+              <div className="meta-list-item">
+                <span className="meta-item-label">Round 3 Finalists:</span>
+                <span className="meta-item-value" style={{ color: (dbStats?.r3Qualified ?? 0) > 0 ? '#22C55E' : '#F59E0B', fontWeight: 700 }}>
+                  {dbStats?.r3Qualified ? `${dbStats.r3Qualified} finalists promoted` : 'Pending Qualification'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -656,6 +787,25 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
               >
                 <Icon name={r2State === 'active' ? 'lock' : 'play'} size={15} />
                 <span>{r2State === 'active' ? 'Lock Round 2 Entry' : 'Start Round 2'}</span>
+              </button>
+              <button
+                type="button"
+                className="btn w-full btn-promote-qualifiers"
+                onClick={() => handleOpenQualify(2)}
+                style={{
+                  background: 'linear-gradient(135deg, #8E233B 0%, #B94B68 100%)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 700,
+                }}
+                title="Promote top Round 2 participants to qualify for Round 3"
+              >
+                <Icon name="award" size={15} />
+                <span>{dbStats?.r3Qualified ? `Re-Qualify for Round 3 (${dbStats.r3Qualified})` : 'Qualify Finalists for Round 3'}</span>
               </button>
               <button
                 type="button"
@@ -901,6 +1051,124 @@ export const AdminRoundControl: React.FC<AdminRoundControlProps> = ({
                 onClick={confirmModal.onConfirm}
               >
                 Confirm Action
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Qualification Modal Dialog */}
+      {qualifyModal.isOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="admin-confirm-modal-card" style={{ maxWidth: '520px' }}>
+            <div className="confirm-modal-header">
+              <Icon name="award" size={22} style={{ color: '#F59E0B' }} />
+              <h3 className="confirm-modal-title">
+                Qualify Candidates for Round {qualifyModal.sourceRound + 1}
+              </h3>
+            </div>
+
+            <p className="confirm-modal-desc">
+              Candidates who completed Round {qualifyModal.sourceRound} will be ranked by score and speed. Top participants up to this limit will be authorized in the database to enter and submit Round {qualifyModal.sourceRound + 1}.
+            </p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid var(--admin-border-subtle)',
+              borderRadius: '8px',
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Verified Round {qualifyModal.sourceRound} Submissions:</span>
+                <strong style={{ color: '#22C55E' }}>{qualifyModal.completedCount} candidates</strong>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label htmlFor="qualify-limit-input" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF' }}>
+                  Number of Candidates to Advance (Max 200):
+                </label>
+                <input
+                  id="qualify-limit-input"
+                  type="number"
+                  min="1"
+                  max="200"
+                  className="field-input"
+                  value={qualifyModal.limit}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setQualifyModal((prev) => ({
+                      ...prev,
+                      limit: isNaN(val) ? 1 : Math.max(1, Math.min(200, val)),
+                    }));
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                    color: '#FFFFFF',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                  }}
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setQualifyModal((prev) => ({ ...prev, limit: qualifyModal.sourceRound === 1 ? 15 : 8 }))}
+                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                >
+                  {qualifyModal.sourceRound === 1 ? 'Top 15' : 'Top 8 Finalists'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setQualifyModal((prev) => ({ ...prev, limit: 50 }))}
+                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                >
+                  Top 50
+                </button>
+                {qualifyModal.completedCount > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setQualifyModal((prev) => ({ ...prev, limit: Math.min(200, qualifyModal.completedCount) }))}
+                    style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                  >
+                    All Completed ({qualifyModal.completedCount})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="confirm-modal-actions" style={{ marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setQualifyModal((prev) => ({ ...prev, isOpen: false }))}
+                disabled={isQualifying}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleExecuteQualify}
+                disabled={isQualifying}
+                style={{
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  borderColor: '#059669',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                }}
+              >
+                {isQualifying ? 'Authorizing in Database...' : `Promote Top ${qualifyModal.limit} to Round ${qualifyModal.sourceRound + 1}`}
               </button>
             </div>
           </div>
