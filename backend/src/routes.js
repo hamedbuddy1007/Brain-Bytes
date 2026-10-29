@@ -2,7 +2,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query, withTransaction } from './db.js';
-import { clearSession, issueSession, requireAuth, extractAuth } from './auth.js';
+import jwt from 'jsonwebtoken';
+import { clearSession, issueSession, requireAuth, extractAuth, secret } from './auth.js';
 
 export const router = Router();
 const roundSchema = z.number().int().min(1).max(3);
@@ -83,12 +84,17 @@ function generateAccessCode() {
   return code;
 }
 
+export function sanitizeText(val, maxLen = 200) {
+  if (typeof val !== 'string') return '';
+  return val.replace(/\0/g, '').replace(/<[^>]*>?/gm, '').trim().slice(0, maxLen);
+}
+
 const participantRegisterSchema = z.object({
-  fullName: z.string().trim().min(2).max(100),
-  rollNumber: z.string().trim().min(1).max(50),
-  department: z.string().trim().min(1).max(60).optional(),
-  yearOfStudy: z.string().trim().min(1).max(30).optional(),
-  collegeName: z.string().trim().max(160).optional(),
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters.').max(100).transform((v) => sanitizeText(v, 100)),
+  rollNumber: z.string().trim().min(1, 'Roll number is required.').max(50).transform((v) => sanitizeText(v, 50).toUpperCase()),
+  department: z.string().trim().min(1).max(60).optional().transform((v) => (v ? sanitizeText(v, 60) : 'CSE')),
+  yearOfStudy: z.string().trim().min(1).max(30).optional().transform((v) => (v ? sanitizeText(v, 30) : '1st Year')),
+  collegeName: z.string().trim().max(160).optional().transform((v) => (v ? sanitizeText(v, 160) : 'Campus')),
 });
 
 router.get('/health', async (_req, res) => {
@@ -165,6 +171,43 @@ router.get('/auth/admin/me', requireAuth('admin'), async (req, res, next) => {
   }
 });
 
+router.post('/auth/admin/change-password', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const body = z.object({
+      currentPassword: z.string().min(1).max(256),
+      newPassword: z.string().min(12, 'New password must contain at least 12 characters.').max(256),
+    }).safeParse(req.body);
+
+    if (!body.success) {
+      return res.status(400).json({ error: body.error.issues[0]?.message || 'Invalid password request.' });
+    }
+
+    const { currentPassword, newPassword } = body.data;
+    const adminResult = await query('SELECT id, username, email, password_hash FROM admins WHERE id = $1', [req.auth.id]);
+    if (!adminResult.rowCount) {
+      return res.status(401).json({ error: 'Admin session expired.' });
+    }
+
+    const adminRecord = adminResult.rows[0];
+    const passwordValid = await bcrypt.compare(currentPassword, adminRecord.password_hash);
+    if (!passwordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await query('UPDATE admins SET password_hash = $1 WHERE id = $2', [newHash, req.auth.id]);
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type) VALUES ($1,$2,$3)', [
+      'admin',
+      req.auth.id,
+      'admin.password_changed',
+    ]);
+
+    res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Participant Registration: Creates a PENDING registration awaiting admin approval
 router.post('/participants/register', async (req, res, next) => {
   try {
@@ -187,21 +230,17 @@ router.post('/participants/register', async (req, res, next) => {
 
     if (existingResult.rowCount) {
       const existing = existingResult.rows[0];
-      if (existing.approval_status === 'APPROVED') {
-        return res.json({
-          status: 'APPROVED',
-          approvalStatus: 'APPROVED',
-          id: Number(existing.id),
-          fullName: existing.full_name,
-          rollNumber: existing.roll_number,
-          accessCode: existing.access_code,
-          department: existing.department,
-          yearOfStudy: existing.year_of_study,
-          message: 'Your registration is already approved! Use your Access Code to enter the arena.',
+      const callerSession = extractAuth(req, 'participant');
+      const isOwnerSession = callerSession && callerSession.id === Number(existing.id);
+
+      if (!isOwnerSession) {
+        return res.status(409).json({
+          error: 'This roll number is already registered. Please log in with your Access Code.',
         });
       }
+
       return res.json({
-        status: 'PENDING',
+        status: existing.approval_status || 'PENDING',
         approvalStatus: existing.approval_status || 'PENDING',
         id: Number(existing.id),
         fullName: existing.full_name,
@@ -209,7 +248,9 @@ router.post('/participants/register', async (req, res, next) => {
         accessCode: null,
         department: existing.department,
         yearOfStudy: existing.year_of_study,
-        message: 'Registration is pending administrator approval.',
+        message: existing.approval_status === 'APPROVED'
+          ? 'Your registration is already approved! Please log in with your Access Code.'
+          : 'Registration is pending administrator approval.',
       });
     }
 
@@ -241,6 +282,20 @@ router.post('/participants/register', async (req, res, next) => {
       JSON.stringify({ rollNumber: participant.roll_number, accessCode }),
     ]);
 
+    const registrationToken = jwt.sign(
+      { rollNumber: normalizedRoll, sub: String(participant.id), type: 'registration_verifier' },
+      secret(),
+      { expiresIn: 86400 }
+    );
+
+    res.cookie('bb_reg_token', registrationToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 86400 * 1000,
+      path: '/',
+    });
+
     res.status(201).json({
       status: 'PENDING',
       approvalStatus: 'PENDING',
@@ -250,6 +305,7 @@ router.post('/participants/register', async (req, res, next) => {
       department: participant.department,
       yearOfStudy: participant.year_of_study,
       accessCode: null,
+      registrationToken,
       message: 'Registration submitted successfully! Please wait while an administrator approves your entry.',
     });
   } catch (error) {
@@ -273,6 +329,38 @@ router.get('/participants/registration-status/:rollNumber', async (req, res, nex
       return res.status(404).json({ error: 'Registration not found.' });
     }
     const p = result.rows[0];
+
+    // Cryptographic validation: only holder of the registration verification token or admin can view the access code
+    const authHeader = req.headers['authorization'];
+    let token = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    }
+    const regToken = req.headers['x-registration-token'] || req.cookies?.['bb_reg_token'] || token;
+    let isAuthorizedRequester = false;
+
+    if (regToken) {
+      try {
+        const verified = jwt.verify(regToken, secret());
+        if (
+          (verified?.type === 'registration_verifier' && verified?.rollNumber?.toUpperCase() === roll.toUpperCase()) ||
+          verified?.role === 'admin'
+        ) {
+          isAuthorizedRequester = true;
+        }
+      } catch {}
+    }
+
+    const participantSession = extractAuth(req, 'participant');
+    if (participantSession && participantSession.id === Number(p.id)) {
+      isAuthorizedRequester = true;
+    }
+
+    const adminSession = extractAuth(req, 'admin');
+    if (adminSession) {
+      isAuthorizedRequester = true;
+    }
+
     res.json({
       id: Number(p.id),
       fullName: p.full_name,
@@ -280,7 +368,7 @@ router.get('/participants/registration-status/:rollNumber', async (req, res, nex
       department: p.department,
       yearOfStudy: p.year_of_study,
       approvalStatus: p.approval_status || 'PENDING',
-      accessCode: p.approval_status === 'APPROVED' ? p.access_code : null,
+      accessCode: (isAuthorizedRequester && p.approval_status === 'APPROVED') ? p.access_code : null,
     });
   } catch (error) {
     next(error);
@@ -519,10 +607,6 @@ router.get('/rounds/:roundId/questions', async (req, res, next) => {
   try {
     const roundId = Number(req.params.roundId);
     if (!roundSchema.safeParse(roundId).success) return res.status(400).json({ error: 'Invalid round' });
-    const state = await query('SELECT status, round_states FROM competition_state WHERE singleton=TRUE');
-    const roundStates = state.rows[0]?.round_states || {};
-    const isLocked = roundStates[String(roundId)] === 'locked' || roundStates[roundId] === 'locked';
-    if (isLocked) return res.status(423).json({ error: 'This round is locked.' });
     const result = await query('SELECT id, prompt, options, sort_order, chart_data FROM questions WHERE round_id=$1 AND enabled=TRUE ORDER BY sort_order', [roundId]);
     res.json({ roundId, questions: result.rows });
   } catch (error) {
@@ -1173,7 +1257,7 @@ router.post('/admin/broadcast', requireAuth('admin'), async (req, res, next) => 
     if (!body.success) {
       return res.status(400).json({ error: 'Broadcast message is required (max 500 characters).' });
     }
-    const msg = body.data.message;
+    const msg = sanitizeText(body.data.message, 500);
     await query(
       'UPDATE competition_state SET broadcast_message = $1, broadcast_timestamp = NOW() WHERE singleton = TRUE',
       [msg],

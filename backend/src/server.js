@@ -6,7 +6,28 @@ import { query, getPool } from './db.js';
 
 const port = Number(process.env.PORT || 4000);
 
+export function validateEnvironment() {
+  const isProd = process.env.NODE_ENV === 'production';
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is required.');
+  }
+
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) {
+    if (isProd) {
+      throw new Error('SESSION_SECRET must contain at least 32 characters in production.');
+    } else {
+      console.warn('⚠️  Security Warning: SESSION_SECRET is shorter than 32 characters. Use a strong secret in production.');
+    }
+  }
+
+  if (isProd && (sessionSecret?.includes('insecure') || sessionSecret?.includes('replace_with'))) {
+    throw new Error('Insecure default SESSION_SECRET detected in production. Rotate SESSION_SECRET immediately.');
+  }
+}
+
 export async function startServer() {
+  validateEnvironment();
   await query('SELECT 1');
   return new Promise((resolve) => {
     const server = app.listen(port, '0.0.0.0', () => {

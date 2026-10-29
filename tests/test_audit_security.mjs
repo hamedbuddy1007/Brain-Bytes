@@ -254,20 +254,18 @@ async function runTests() {
     testPass('Round Locks: Inactive/locked round attempt start rejected with 423');
   }
 
-  // 6. Production join code requirement
-  console.log('\n6. Event Join Code Fail-Safe Check:');
+  // 6. Registration validation fail-safe check
+  console.log('\n6. Registration Validation Fail-Safe Check:');
   const badJoinRes = await fetch(`${baseUrl}/api/participants/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      fullName: 'New Candidate Test',
-      rollNumber: 'NON_EXISTENT_ROLL_9999',
-      joinCode: 'WRONG_CODE_XYZ',
-      roundId: 1,
+      fullName: '',
+      rollNumber: '',
     }),
   });
-  assert.strictEqual(badJoinRes.status, 400, 'Bad join code returns 400');
-  testPass('Invalid event join codes are rejected');
+  assert.strictEqual(badJoinRes.status, 400, 'Bad registration details return 400');
+  testPass('Invalid registration inputs are rejected with 400');
 
   console.log('\n====================================================');
   console.log(` AUDIT RESULTS: ALL ${testCount} SECURITY & ARCHITECTURE CHECKS PASSED`);

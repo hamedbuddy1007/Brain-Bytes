@@ -39,12 +39,19 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
     let isMounted = true;
     const checkStatus = async () => {
       try {
+        let regToken: string | null = null;
+        try {
+          regToken = sessionStorage.getItem(`bb_reg_token_${registeredRoll}`);
+        } catch {}
+
         const res = await apiRequest<{
           fullName: string;
           rollNumber: string;
           approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
           accessCode: string | null;
-        }>(`/participants/registration-status/${encodeURIComponent(registeredRoll)}`);
+        }>(`/participants/registration-status/${encodeURIComponent(registeredRoll)}`, {
+          headers: regToken ? { 'x-registration-token': regToken } : undefined,
+        });
 
         if (!isMounted) return;
 
@@ -101,6 +108,7 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
         approvalStatus?: string;
         rollNumber: string;
         accessCode?: string | null;
+        registrationToken?: string;
         message?: string;
       }>('/participants/register', {
         method: 'POST',
@@ -114,6 +122,11 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
       });
 
       setRegisteredRoll(trimmedRoll);
+      if (res?.registrationToken) {
+        try {
+          sessionStorage.setItem(`bb_reg_token_${trimmedRoll}`, res.registrationToken);
+        } catch {}
+      }
 
       if (res?.approvalStatus === 'APPROVED' && res?.accessCode) {
         setApprovedAccessCode(res.accessCode);

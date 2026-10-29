@@ -19,7 +19,7 @@ if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
   configuredOrigins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
 }
 
-function isAllowedOrigin(origin, hostHeader) {
+export function isAllowedOrigin(origin, hostHeader) {
   if (!origin) return true;
   if (configuredOrigins.includes(origin)) return true;
 
@@ -49,16 +49,56 @@ function isAllowedOrigin(origin, hostHeader) {
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
-app.use(helmet());
 
-app.use(cors({
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) return callback(null, true);
-    return callback(null, false);
+// Hardened Security Headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: [
+        "'self'",
+        ...configuredOrigins,
+        'https:',
+        'http://localhost:*',
+        'http://127.0.0.1:*',
+      ],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
   },
-  credentials: true,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: process.env.NODE_ENV === 'production' ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
+// Dynamic CORS configuration respecting same-origin host and configured origins
+app.use((req, res, next) => {
+  const host = req.get('host');
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin, host)) return callback(null, true);
+      return callback(null, false);
+    },
+    credentials: true,
+  })(req, res, next);
+});
+
+// Strict CSRF and Origin Check for Mutating HTTP Methods
 app.use((req, res, next) => {
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
     const origin = req.get('origin');
@@ -70,23 +110,77 @@ app.use((req, res, next) => {
   next();
 });
 
+// Limit body payload to prevent DoS via bloated JSON payloads
 app.use(express.json({ limit: '64kb' }));
 app.use(cookieParser());
 
-const authLimiter = rateLimit({
+// Rate Limiters
+export const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many admin login attempts. Please wait 15 minutes before trying again.' },
+});
+
+export const participantAccessCodeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many access code login attempts. Please wait 10 minutes.' },
+});
+
+export const participantRegisterLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many registration requests from this network. Please wait a few minutes.' },
+});
+
+export const submissionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Submission request rate limit reached. Please wait a moment.' },
+});
+
+export const proctorEventLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+
+export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
 });
 
-// Generous on purpose: all participants will likely share one public IP (campus NAT).
-const participantLimiter = rateLimit({
+// Generous on purpose for active exam polling (campus NAT sharing)
+export const participantLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: 600,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
 });
+
+// Apply granular rate limiting
+app.use('/api/auth/admin/login', adminLoginLimiter);
+app.use('/auth/admin/login', adminLoginLimiter);
+
+app.use('/api/participants/login-access-code', participantAccessCodeLimiter);
+app.use('/participants/login-access-code', participantAccessCodeLimiter);
+
+app.use('/api/participants/register', participantRegisterLimiter);
+app.use('/participants/register', participantRegisterLimiter);
+
+app.use('/api/participants/proctor-event', proctorEventLimiter);
+app.use('/participants/proctor-event', proctorEventLimiter);
 
 app.use('/api/auth', authLimiter);
 app.use('/auth', authLimiter);
@@ -105,6 +199,7 @@ app.use((req, res, next) => {
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 
+// Safe centralized error handler (zero stack trace or internal SQL leak)
 app.use((error, _req, res, _next) => {
   if (error?.status && error.status < 500) {
     return res.status(error.status).json({ error: error.message });
