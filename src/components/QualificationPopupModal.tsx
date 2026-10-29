@@ -34,8 +34,6 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
     targetRound,
     status,
     score,
-    rank,
-    qualifiedCount,
   } = qualification;
 
   const targetMeta = ROUND_TITLES[targetRound] || {
@@ -234,41 +232,6 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
               </div>
             </div>
 
-            {rank && (
-              <div
-                style={{
-                  background: 'rgba(16, 185, 129, 0.14)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  borderRadius: '12px',
-                  padding: '12px 14px',
-                  textAlign: 'center',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    color: '#6EE7B7',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Qualifier Rank
-                </div>
-                <div
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 800,
-                    color: '#34D399',
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
-                >
-                  #{rank}
-                </div>
-              </div>
-            )}
-
             <div
               style={{
                 background: isQualified
@@ -347,8 +310,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   <span>Unlocked Stage: {targetMeta.title}</span>
                 </div>
                 <p style={{ margin: 0, color: '#E2E8F0', fontSize: '13.5px' }}>
-                  Based on your Round {sourceRound} performance, you have officially qualified among the top{' '}
-                  <strong style={{ color: '#FFFFFF' }}>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}candidates</strong> to advance to{' '}
+                  Based on your Round {sourceRound} performance, you have officially qualified to advance to{' '}
                   <strong style={{ color: '#FFFFFF' }}>Round {targetRound}</strong>.{' '}
                   {targetRoundStatus === 'active'
                     ? `Round ${targetRound} is currently LIVE — you may enter the stage immediately!`
@@ -364,9 +326,8 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   <span>Elimination Cutoff Applied for Round {targetRound}</span>
                 </div>
                 <p style={{ margin: 0, color: '#E2E8F0', fontSize: '13.5px' }}>
-                  Thank you for competing in <strong style={{ color: '#FFFFFF' }}>Round {sourceRound}</strong> of Data Mania: Brain Bytes. Only the top{' '}
-                  <strong style={{ color: '#FFFFFF' }}>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}qualifying participants</strong> from Round {sourceRound} were selected to progress to{' '}
-                  <strong style={{ color: '#FFFFFF' }}>Round {targetRound} ({targetMeta.title})</strong>. Your Round {sourceRound} score has been permanently recorded on the tournament leaderboard.
+                  Thank you for competing in <strong style={{ color: '#FFFFFF' }}>Round {sourceRound}</strong> of Data Mania: Brain Bytes. You have not qualified to progress to{' '}
+                  <strong style={{ color: '#FFFFFF' }}>Round {targetRound} ({targetMeta.title})</strong>. Your Round {sourceRound} score has been permanently recorded in the tournament database.
                 </p>
               </>
             )}

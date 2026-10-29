@@ -12,6 +12,7 @@ import { AdminProjectorDisplay } from './admin/AdminProjectorDisplay';
 import { AdminResultsReports } from './admin/AdminResultsReports';
 import { AdminSettingsView } from './admin/AdminSettingsView';
 import { AdminBroadcasts } from './admin/AdminBroadcasts';
+import { AdminParticipantAnswers } from './admin/AdminParticipantAnswers';
 import './admin/AdminControlCenter.css';
 
 interface AdminDashboardProps {
@@ -30,6 +31,7 @@ export type AdminTab =
   | 'overview'
   | 'round-control'
   | 'participants'
+  | 'answer-sheets'
   | 'broadcasts'
   | 'question-bank'
   | 'leaderboard'
@@ -48,6 +50,7 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'overview', label: 'Overview', subtitle: 'KPIs & Live Status', icon: 'grid' },
   { id: 'round-control', label: 'Round Control', subtitle: 'Start, Lock & Qualify', icon: 'sliders' },
   { id: 'participants', label: 'Participants', subtitle: 'Roster & Approvals', icon: 'users' },
+  { id: 'answer-sheets', label: 'Answer Sheets', subtitle: 'Check Individual Answers', icon: 'check-circle' },
   { id: 'broadcasts', label: 'Announcements', subtitle: 'Live Broadcast Console', icon: 'bell' },
   { id: 'question-bank', label: 'Question Bank', subtitle: 'Manage Questions', icon: 'help-circle' },
   { id: 'leaderboard', label: 'Live Leaderboard', subtitle: 'Real-Time Standings', icon: 'bar-chart-2' },
@@ -67,6 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onReturnToLanding,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [inspectedParticipantId, setInspectedParticipantId] = useState<string | null>(null);
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState(false);
   const r1Active = settings.roundStates[1] === 'active';
 
@@ -300,7 +304,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {activeTab === 'participants' && (
-          <AdminParticipants onReturnToOverview={() => handleSelectTab('overview')} />
+          <AdminParticipants
+            onReturnToOverview={() => handleSelectTab('overview')}
+            onInspectParticipantAnswers={(participantId) => {
+              setInspectedParticipantId(participantId);
+              handleSelectTab('answer-sheets');
+            }}
+          />
+        )}
+
+        {activeTab === 'answer-sheets' && (
+          <AdminParticipantAnswers initialParticipantId={inspectedParticipantId} />
         )}
 
         {activeTab === 'broadcasts' && (
@@ -313,6 +327,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'leaderboard' && (
           <AdminLiveLeaderboard
+            settings={settings}
+            onUpdateSettings={onUpdateSettings}
             onOpenProjector={onOpenProjector}
           />
         )}

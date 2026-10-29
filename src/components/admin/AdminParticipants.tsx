@@ -7,9 +7,12 @@ import { clearAllAttemptsOnly, purgeAllTournamentData } from '../../services/com
 
 interface AdminParticipantsProps {
   onReturnToOverview?: () => void;
+  onInspectParticipantAnswers?: (participantId: string) => void;
 }
 
-export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
+export const AdminParticipants: React.FC<AdminParticipantsProps> = ({
+  onInspectParticipantAnswers,
+}) => {
   const [participants, setParticipants] = useState<RegistryParticipant[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -702,11 +705,35 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                               );
                             }
                             return (
-                              <div>
-                                <span className="cell-score-value">{p.totalScore ?? 0} pts</span>
-                                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                  R1: {r1 && r1.score !== null ? `${r1.score}` : ' '} | R2: {r2 && r2.score !== null ? `${r2.score}` : ' '} | R3: {r3 && r3.score !== null ? `${r3.score}` : ' '}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div>
+                                  <span className="cell-score-value">{p.totalScore ?? 0} pts</span>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                    R1: {r1 && r1.score !== null ? `${r1.score}` : '—'} | R2: {r2 && r2.score !== null ? `${r2.score}` : '—'} | R3: {r3 && r3.score !== null ? `${r3.score}` : '—'}
+                                  </div>
                                 </div>
+                                {onInspectParticipantAnswers && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onInspectParticipantAnswers(p.id);
+                                    }}
+                                    style={{
+                                      alignSelf: 'flex-start',
+                                      background: 'rgba(56, 189, 248, 0.14)',
+                                      border: '1px solid rgba(56, 189, 248, 0.35)',
+                                      color: '#38BDF8',
+                                      borderRadius: '6px',
+                                      padding: '3px 8px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Check Answers →
+                                  </button>
+                                )}
                               </div>
                             );
                           })()}
@@ -749,6 +776,26 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                   <span className="side-profile-campus">{selectedParticipant.campus}</span>
                 </div>
               </div>
+
+              {onInspectParticipantAnswers && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => onInspectParticipantAnswers(selectedParticipant.id)}
+                  style={{
+                    width: '100%',
+                    justifyContent: 'center',
+                    marginBottom: '14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontWeight: 800,
+                  }}
+                >
+                  <Icon name="file-text" size={15} />
+                  <span>Check Individual Question Answers</span>
+                </button>
+              )}
 
               {/* Information Grid */}
               <div className="side-info-list">

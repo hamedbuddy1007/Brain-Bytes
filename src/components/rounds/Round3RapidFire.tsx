@@ -202,24 +202,29 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
 
 
 
-  // Keep the latest callback in a ref so the attempt-start effect does not re-run (and re-POST) on every parent render
+  // Keep the latest callbacks in refs so the attempt-start effect does not re-run (and re-POST) on every parent render
   const onRecordScoreRef = useRef(onRecordScore);
   useEffect(() => {
     onRecordScoreRef.current = onRecordScore;
   }, [onRecordScore]);
 
+  const onExitRef = useRef(onExit);
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
   // Sync answers, review marks & visited state to localStorage across changes
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(`bb_answers_r3_${participantKey}`, JSON.stringify(selectedAnswers));
     } catch (err) {
       console.warn('Failed to save answers to localStorage:', err);
     }
-  }, [selectedAnswers, participantKey, isSubmitted, attemptId]);
+  }, [selectedAnswers, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_marked_r3_${participantKey}`,
@@ -228,10 +233,10 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
     } catch (err) {
       console.warn('Failed to save marked questions to localStorage:', err);
     }
-  }, [markedForReview, participantKey, isSubmitted, attemptId]);
+  }, [markedForReview, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_visited_r3_${participantKey}`,
@@ -240,7 +245,7 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
     } catch {
       // ignore
     }
-  }, [visitedQuestions, participantKey, isSubmitted, attemptId]);
+  }, [visitedQuestions, participantKey, isSubmitted]);
 
   // Accidental tab close / reload protection while attempt is active
   useEffect(() => {
@@ -391,8 +396,8 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
             ? localStorage.getItem(`bb_attempt_id_r3_${participantKey}`)
             : null;
 
-          // If attempt ID changed or is newly started, discard any stale answers
-          if (!savedAttemptId || savedAttemptId !== String(attempt.id)) {
+          // Only discard local answers if a DIFFERENT attempt ID was previously stored (e.g. admin reset the round)
+          if (savedAttemptId && savedAttemptId !== String(attempt.id)) {
             const firstQId = roundQuestions[0]?.id || 1;
             setSelectedAnswers({});
             setMarkedForReview(new Set());
@@ -427,38 +432,19 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
       })
       .catch((err: unknown) => {
         console.warn('Attempt initialization notice for Round 3:', err);
-        // Clear stale local responses on attempt failure, rejection, or reset
-        setSelectedAnswers({});
-        setMarkedForReview(new Set());
-        if (participantKey) {
-          try {
-            localStorage.removeItem(`bb_answers_r3_${participantKey}`);
-            localStorage.removeItem(`bb_marked_r3_${participantKey}`);
-            localStorage.removeItem(`bb_submitted_r3_${participantKey}`);
-            localStorage.removeItem(`bb_score_r3_${participantKey}`);
-            localStorage.removeItem(`bb_review_r3_${participantKey}`);
-            localStorage.removeItem(`bb_attempt_id_r3_${participantKey}`);
-          } catch {
-            // ignore
-          }
-        }
-        setIsSubmitted(false);
-        setFinalScore(null);
-        setReviewData({});
-
         const isAuthErr = err instanceof ApiError && (err.status === 401 || err.status === 403 || err.status === 423);
         const errMsg = err instanceof Error ? err.message : '';
         if (isAuthErr || errMsg.toLowerCase().includes('qualif') || errMsg.toLowerCase().includes('submit round 2') || errMsg.toLowerCase().includes('not currently open')) {
           if (typeof window !== 'undefined') {
             window.location.hash = '#/';
           }
-          if (onExit) onExit();
+          if (onExitRef.current) onExitRef.current();
         }
       });
     return () => {
       isMounted = false;
     };
-  }, [participantKey, applyReviewPayload, onExit]);
+  }, [participantKey, applyReviewPayload, roundQuestions]);
 
   // Synchronize on authoritative round reset
   useEffect(() => {
@@ -822,17 +808,10 @@ export const Round3RapidFire: React.FC<Round3RapidFireProps> = ({
     const qId = currentQuestion.id;
 
     setVisitedQuestions((prev) => new Set(prev).add(qId));
-    setSelectedAnswers((prev) => {
-      if (prev[qId] === optionIdx) {
-        const next = { ...prev };
-        delete next[qId];
-        return next;
-      }
-      return {
-        ...prev,
-        [qId]: optionIdx,
-      };
-    });
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [qId]: optionIdx,
+    }));
   };
 
   // Clear current response

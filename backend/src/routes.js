@@ -118,7 +118,7 @@ async function getParticipantQualificationMap(participantId, attemptsRows = []) 
       sourceSubmitted,
       isQualified,
       status,
-      rank: qualEvent?.details?.rank ? Number(qualEvent.details.rank) : null,
+      rank: null,
       score:
         sourceAttempt?.score !== undefined && sourceAttempt?.score !== null
           ? Number(sourceAttempt.score)
@@ -656,7 +656,8 @@ router.get('/competition/state', async (_req, res, next) => {
           broadcast_message,
           broadcast_timestamp,
           updated_at,
-          (SELECT details FROM audit_events WHERE event_type = 'competition.broadcast' ORDER BY id DESC LIMIT 1) AS broadcast_meta
+          (SELECT details FROM audit_events WHERE event_type = 'competition.broadcast' ORDER BY id DESC LIMIT 1) AS broadcast_meta,
+          COALESCE((SELECT (details->>'published')::boolean FROM audit_events WHERE event_type = 'competition.leaderboard_visibility' ORDER BY id DESC LIMIT 1), FALSE) AS leaderboard_published
         FROM competition_state
         WHERE singleton=TRUE
       `),
@@ -670,6 +671,7 @@ router.get('/competition/state', async (_req, res, next) => {
     ]);
     const row = result.rows[0] || {};
     const meta = row.broadcast_message ? (row.broadcast_meta || {}) : {};
+    const leaderboardPublished = Boolean(row.leaderboard_published);
     const announcements = historyResult.rows.map((h) => ({
       id: Number(h.id),
       message: h.details?.message || '',
@@ -679,6 +681,8 @@ router.get('/competition/state', async (_req, res, next) => {
     }));
     res.json({
       ...row,
+      leaderboard_published: leaderboardPublished,
+      leaderboardPublished,
       broadcastMessage: row.broadcast_message || null,
       broadcastTimestamp: row.broadcast_timestamp || null,
       broadcastTitle: meta.title || null,
@@ -1056,8 +1060,18 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
   }
 });
 
-router.get('/leaderboard', async (_req, res, next) => {
+router.get('/leaderboard', async (req, res, next) => {
   try {
+    const isAdmin = Boolean(extractAuth(req, 'admin'));
+    if (!isAdmin) {
+      const visCheck = await query(
+        "SELECT COALESCE((SELECT (details->>'published')::boolean FROM audit_events WHERE event_type = 'competition.leaderboard_visibility' ORDER BY id DESC LIMIT 1), FALSE) AS published"
+      );
+      if (!visCheck.rows[0]?.published) {
+        return res.json([]);
+      }
+    }
+
     const result = await query(`
       SELECT p.full_name AS name, p.roll_number, p.college_name,
         MAX(a.score) FILTER (WHERE a.round_id=1) AS round1_score,
@@ -1325,6 +1339,136 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
   }
 });
 
+// Admin: Inspect individual participant's question-by-question answers across all rounds
+router.get('/admin/participants/:id/answers', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const participantId = Number(req.params.id);
+    if (!Number.isSafeInteger(participantId) || participantId < 1) {
+      return res.status(400).json({ error: 'Invalid participant ID.' });
+    }
+
+    const [partRes, attemptsRes, questionsRes, answersRes] = await Promise.all([
+      query(
+        'SELECT id, full_name, roll_number, department, year_of_study, access_code, approval_status, assigned_seat, ticket_id, created_at FROM participants WHERE id = $1',
+        [participantId]
+      ),
+      query(
+        'SELECT id, round_id, started_at, deadline_at, submitted_at, score, correct_count, incorrect_count, unanswered_count, time_taken_seconds FROM attempts WHERE participant_id = $1 ORDER BY round_id ASC',
+        [participantId]
+      ),
+      query(
+        'SELECT id, round_id, sort_order, prompt, options, correct_answer, points_correct, points_wrong, explanation FROM questions WHERE enabled = TRUE ORDER BY round_id ASC, sort_order ASC'
+      ),
+      query(
+        `SELECT ans.attempt_id, ans.question_id, ans.selected_option, att.round_id
+         FROM answers ans
+         JOIN attempts att ON att.id = ans.attempt_id
+         WHERE att.participant_id = $1`,
+        [participantId]
+      ),
+    ]);
+
+    if (!partRes.rowCount) {
+      return res.status(404).json({ error: 'Participant not found.' });
+    }
+
+    const p = partRes.rows[0];
+    const attemptsByRound = new Map();
+    for (const att of attemptsRes.rows) {
+      attemptsByRound.set(Number(att.round_id), {
+        id: Number(att.id),
+        roundId: Number(att.round_id),
+        startedAt: att.started_at,
+        deadlineAt: att.deadline_at,
+        submittedAt: att.submitted_at,
+        score: att.score !== null && att.score !== undefined ? Number(att.score) : null,
+        correctCount: Number(att.correct_count ?? 0),
+        incorrectCount: Number(att.incorrect_count ?? 0),
+        unansweredCount: Number(att.unanswered_count ?? 0),
+        timeTakenSeconds: att.time_taken_seconds !== null && att.time_taken_seconds !== undefined ? Number(att.time_taken_seconds) : null,
+      });
+    }
+
+    const answerMapByQuestionId = new Map();
+    for (const row of answersRes.rows) {
+      if (row.selected_option !== null && row.selected_option !== undefined) {
+        answerMapByQuestionId.set(Number(row.question_id), Number(row.selected_option));
+      }
+    }
+
+    const roundsPayload = { 1: null, 2: null, 3: null };
+    for (const rId of [1, 2, 3]) {
+      const rQuestions = questionsRes.rows.filter((q) => Number(q.round_id) === rId);
+      const rAttempt = attemptsByRound.get(rId) || null;
+
+      const items = rQuestions.map((q) => {
+        const qId = Number(q.id);
+        const sortOrder = Number(q.sort_order);
+        const correctAnswer = Number(q.correct_answer);
+        const selectedOption = answerMapByQuestionId.has(qId) ? answerMapByQuestionId.get(qId) : null;
+        const isAttempted = selectedOption !== null && selectedOption !== undefined && Number.isInteger(selectedOption) && selectedOption >= 0 && selectedOption <= 3;
+        const isCorrect = isAttempted && selectedOption === correctAnswer;
+        const status = !isAttempted ? 'UNATTEMPTED' : isCorrect ? 'CORRECT' : 'INCORRECT';
+        const pointsAwarded = !isAttempted
+          ? 0
+          : isCorrect
+            ? Number(q.points_correct ?? 1)
+            : Number(q.points_wrong ?? 0);
+
+        const rawOpts = Array.isArray(q.options) ? q.options : [];
+        const formattedOptions = rawOpts.map((opt, idx) => {
+          const defaultKey = ['A', 'B', 'C', 'D'][idx] || String(idx + 1);
+          if (typeof opt === 'string') {
+            return { key: defaultKey, label: opt };
+          }
+          return {
+            key: opt?.key || defaultKey,
+            label: opt?.label ?? String(opt ?? ''),
+            subtext: opt?.subtext || undefined,
+          };
+        });
+
+        return {
+          id: qId,
+          sortOrder,
+          prompt: q.prompt,
+          options: formattedOptions,
+          correctAnswer,
+          selectedOption: isAttempted ? selectedOption : null,
+          status,
+          pointsAwarded,
+          pointsCorrect: Number(q.points_correct ?? 1),
+          pointsWrong: Number(q.points_wrong ?? 0),
+          explanation: q.explanation || '',
+        };
+      });
+
+      roundsPayload[rId] = {
+        roundId: rId,
+        attempt: rAttempt,
+        questions: items,
+      };
+    }
+
+    res.json({
+      participant: {
+        id: Number(p.id),
+        fullName: p.full_name,
+        rollNumber: p.roll_number,
+        department: p.department || 'CSE',
+        yearOfStudy: p.year_of_study || '1st Year',
+        accessCode: p.access_code || '—',
+        approvalStatus: p.approval_status || 'PENDING',
+        assignedSeat: p.assigned_seat || `Station #${((Number(p.id) - 1) % 120) + 1}`,
+        ticketId: p.ticket_id || `BB-26-${String(p.id).padStart(4, '0')}`,
+      },
+      rounds: roundsPayload,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Admin Approval Actions
 router.post('/admin/participants/:id/approve', requireAuth('admin'), async (req, res, next) => {
   try {
@@ -1492,11 +1636,19 @@ router.patch('/admin/competition/state', requireAuth('admin'), async (req, res, 
       status: z.enum(['NOT_STARTED', 'LIVE', 'PAUSED', 'COMPLETED']).optional(),
       activeRound: z.number().int().min(1).max(3).nullable().optional(),
       registrationOpen: z.boolean().optional(),
+      leaderboardPublished: z.boolean().optional(),
       roundStates: z.record(z.string(), z.enum(['active', 'locked', 'completed'])).optional(),
       roundDurations: z.record(z.string(), z.number().int().min(60).max(7200)).optional(),
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid competition settings.' });
-    const { status, activeRound, registrationOpen, roundStates, roundDurations } = parsed.data;
+    const { status, activeRound, registrationOpen, leaderboardPublished, roundStates, roundDurations } = parsed.data;
+
+    if (leaderboardPublished !== undefined) {
+      await query(
+        'INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)',
+        ['admin', req.auth.id, 'competition.leaderboard_visibility', JSON.stringify({ published: Boolean(leaderboardPublished) })]
+      );
+    }
 
     // Fetch previous competition state for pause/resume handling
     const currentStateResult = await query('SELECT status, paused_at FROM competition_state WHERE singleton=TRUE');

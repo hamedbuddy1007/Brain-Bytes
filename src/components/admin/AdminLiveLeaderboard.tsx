@@ -4,23 +4,39 @@ import {
   getUnifiedLeaderboard,
   refreshLeaderboardFromServer,
   subscribeToCompetitionSync,
+  getAdminSettings,
+  saveAdminSettings,
 } from '../../services/competitionStateService';
 import { compareRound3Rankings } from '../../services/scoringService';
-import type { LeaderboardEntry } from '../../types/competition';
+import { apiRequest } from '../../services/apiClient';
+import type { LeaderboardEntry, AdminSettings } from '../../types/competition';
 
 interface AdminLiveLeaderboardProps {
+  settings?: AdminSettings;
+  onUpdateSettings?: (newSettings: AdminSettings) => void;
   onOpenProjector?: () => void;
 }
 
 export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
+  settings,
+  onUpdateSettings,
   onOpenProjector,
 }) => {
   const [rawEntries, setRawEntries] = useState<LeaderboardEntry[]>(() => getUnifiedLeaderboard());
   const [selectedRound, setSelectedRound] = useState<'ALL' | 'R1' | 'R2' | 'R3'>('ALL');
   const [searchFilter, setSearchFilter] = useState('');
-  const [isPublished, setIsPublished] = useState(true);
+  const [isPublished, setIsPublished] = useState<boolean>(() =>
+    Boolean(settings?.leaderboardPublished ?? getAdminSettings().leaderboardPublished ?? false)
+  );
+  const [isUpdatingPublish, setIsUpdatingPublish] = useState(false);
 
-  // Sync with live competition submissions from server
+  useEffect(() => {
+    if (settings?.leaderboardPublished !== undefined) {
+      setIsPublished(Boolean(settings.leaderboardPublished));
+    }
+  }, [settings?.leaderboardPublished]);
+
+  // Sync with live competition submissions and leaderboard_published state from server
   useEffect(() => {
     let active = true;
     const fetchLatest = () => {
@@ -29,11 +45,27 @@ export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
           if (active) setRawEntries(getUnifiedLeaderboard());
         })
         .catch(() => {});
+
+      apiRequest<{ leaderboard_published?: boolean; leaderboardPublished?: boolean }>('/competition/state')
+        .then((st) => {
+          if (!active || !st) return;
+          const pub = st.leaderboard_published ?? st.leaderboardPublished;
+          if (pub !== undefined) {
+            setIsPublished(Boolean(pub));
+          }
+        })
+        .catch(() => {});
     };
     fetchLatest();
 
     const handleSync = () => {
-      if (active) setRawEntries(getUnifiedLeaderboard());
+      if (active) {
+        setRawEntries(getUnifiedLeaderboard());
+        const currentSettings = getAdminSettings();
+        if (currentSettings.leaderboardPublished !== undefined) {
+          setIsPublished(Boolean(currentSettings.leaderboardPublished));
+        }
+      }
     };
     const unsubscribe = subscribeToCompetitionSync(handleSync);
     const interval = setInterval(fetchLatest, 4000);
@@ -111,14 +143,32 @@ export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
     );
   });
 
-  const togglePublishing = () => {
+  const togglePublishing = async () => {
+    if (isUpdatingPublish) return;
     const next = !isPublished;
+    setIsUpdatingPublish(true);
     setIsPublished(next);
-    alert(
-      next
-        ? 'Leaderboard published to public participant arena.'
-        : 'Leaderboard retracted to draft/hidden state. Public arena view paused.'
-    );
+
+    try {
+      await apiRequest('/admin/competition/state', {
+        method: 'PATCH',
+        body: JSON.stringify({ leaderboardPublished: next }),
+      });
+      const baseSettings = settings || getAdminSettings();
+      const updatedSettings: AdminSettings = {
+        ...baseSettings,
+        leaderboardPublished: next,
+      };
+      saveAdminSettings(updatedSettings);
+      if (onUpdateSettings) {
+        onUpdateSettings(updatedSettings);
+      }
+    } catch (err) {
+      setIsPublished(!next);
+      alert(`Failed to update leaderboard visibility: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdatingPublish(false);
+    }
   };
 
   return (
@@ -126,7 +176,9 @@ export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
       {/* Header */}
       <div className="screen-header-block">
         <h1 className="screen-maintitle">Live Leaderboard</h1>
-        <p className="screen-subtitle">Real-time candidate standings, verified scores, and auditorium broadcast status</p>
+        <p className="screen-subtitle">
+          Real-time candidate standings, verified scores, and participant leaderboard visibility control
+        </p>
       </div>
 
       {/* Filter and Publishing Bar */}
@@ -137,7 +189,7 @@ export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
             <input
               type="text"
               className="search-input-field"
-              placeholder="Search competitor, roll number, or institution..."
+              placeholder="Search competitor, roll number, or department..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               aria-label="Search leaderboard"
@@ -179,16 +231,28 @@ export const AdminLiveLeaderboard: React.FC<AdminLiveLeaderboardProps> = ({
         <div className="filter-right-cluster">
           {/* Unobtrusive Live/Publish Status */}
           <span className={`status-pill ${isPublished ? 'is-active' : 'is-locked'}`}>
-            {isPublished ? '● Published to Arena' : '○ Draft Mode (Hidden)'}
+            {isPublished ? '● Visible to Participants' : '🔒 Hidden from Participants'}
           </span>
 
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className={`btn ${isPublished ? 'btn-secondary' : 'btn-primary'} btn-sm`}
             onClick={togglePublishing}
+            disabled={isUpdatingPublish}
+            style={
+              isPublished
+                ? { borderColor: '#EF4444', color: '#F87171' }
+                : { background: '#16A34A', borderColor: '#22C55E', color: '#FFFFFF' }
+            }
           >
-            <Icon name="shield" size={13} />
-            <span>{isPublished ? 'Retract from Arena' : 'Publish to Arena'}</span>
+            <Icon name={isPublished ? 'lock' : 'unlock'} size={13} />
+            <span>
+              {isUpdatingPublish
+                ? 'Updating...'
+                : isPublished
+                  ? 'Hide Leaderboard from Participants'
+                  : 'Display Leaderboard to Participants'}
+            </span>
           </button>
 
           {onOpenProjector && (

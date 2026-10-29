@@ -204,24 +204,29 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
 
 
 
-  // Keep the latest callback in a ref so the attempt-start effect does not re-run (and re-POST) on every parent render
+  // Keep the latest callbacks in refs so the attempt-start effect does not re-run (and re-POST) on every parent render
   const onRecordScoreRef = useRef(onRecordScore);
   useEffect(() => {
     onRecordScoreRef.current = onRecordScore;
   }, [onRecordScore]);
 
+  const onExitRef = useRef(onExit);
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
   // Sync answers, review marks & visited state to localStorage across changes
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(`bb_answers_r2_${participantKey}`, JSON.stringify(selectedAnswers));
     } catch (err) {
       console.warn('Failed to save answers to localStorage:', err);
     }
-  }, [selectedAnswers, participantKey, isSubmitted, attemptId]);
+  }, [selectedAnswers, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_marked_r2_${participantKey}`,
@@ -230,10 +235,10 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     } catch (err) {
       console.warn('Failed to save marked questions to localStorage:', err);
     }
-  }, [markedForReview, participantKey, isSubmitted, attemptId]);
+  }, [markedForReview, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_visited_r2_${participantKey}`,
@@ -242,7 +247,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     } catch {
       // ignore
     }
-  }, [visitedQuestions, participantKey, isSubmitted, attemptId]);
+  }, [visitedQuestions, participantKey, isSubmitted]);
 
   // Accidental tab close / reload protection while attempt is active
   useEffect(() => {
@@ -393,8 +398,8 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
             ? localStorage.getItem(`bb_attempt_id_r2_${participantKey}`)
             : null;
 
-          // If attempt ID is not yet stored or changed (e.g. fresh start, round reset, or purge), discard any stale local answers
-          if (!savedAttemptId || savedAttemptId !== String(attempt.id)) {
+          // Only discard local answers if a DIFFERENT attempt ID was previously stored (e.g. admin reset the round)
+          if (savedAttemptId && savedAttemptId !== String(attempt.id)) {
             const firstQId = roundQuestions[0]?.id || 1;
             setSelectedAnswers({});
             setMarkedForReview(new Set());
@@ -429,38 +434,19 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
       })
       .catch((err: unknown) => {
         console.warn('Attempt initialization notice for Round 2:', err);
-        // Clear stale local responses on attempt failure, rejection, or reset
-        setSelectedAnswers({});
-        setMarkedForReview(new Set());
-        if (participantKey) {
-          try {
-            localStorage.removeItem(`bb_answers_r2_${participantKey}`);
-            localStorage.removeItem(`bb_marked_r2_${participantKey}`);
-            localStorage.removeItem(`bb_submitted_r2_${participantKey}`);
-            localStorage.removeItem(`bb_score_r2_${participantKey}`);
-            localStorage.removeItem(`bb_review_r2_${participantKey}`);
-            localStorage.removeItem(`bb_attempt_id_r2_${participantKey}`);
-          } catch {
-            // ignore
-          }
-        }
-        setIsSubmitted(false);
-        setFinalScore(null);
-        setReviewData({});
-
         const isAuthErr = err instanceof ApiError && (err.status === 401 || err.status === 403 || err.status === 423);
         const errMsg = err instanceof Error ? err.message : '';
         if (isAuthErr || errMsg.toLowerCase().includes('qualif') || errMsg.toLowerCase().includes('submit round 1') || errMsg.toLowerCase().includes('not currently open')) {
           if (typeof window !== 'undefined') {
             window.location.hash = '#/';
           }
-          if (onExit) onExit();
+          if (onExitRef.current) onExitRef.current();
         }
       });
     return () => {
       isMounted = false;
     };
-  }, [participantKey, applyReviewPayload, onExit]);
+  }, [participantKey, applyReviewPayload, roundQuestions]);
 
   // Synchronize on authoritative round reset
   useEffect(() => {
@@ -824,17 +810,10 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     const qId = currentQuestion.id;
 
     setVisitedQuestions((prev) => new Set(prev).add(qId));
-    setSelectedAnswers((prev) => {
-      if (prev[qId] === optionIdx) {
-        const next = { ...prev };
-        delete next[qId];
-        return next;
-      }
-      return {
-        ...prev,
-        [qId]: optionIdx,
-      };
-    });
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [qId]: optionIdx,
+    }));
   };
 
   // Clear current response
@@ -1017,8 +996,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
                           CONGRATULATIONS! YOU HAVE QUALIFIED FOR THE ROUND 3 GRAND FINALE!
                         </div>
                         <div style={{ color: '#A7F3D0', fontSize: '0.82rem', marginTop: '2px' }}>
-                          You have been officially selected to advance to Round 3 (Rapid Fire Showdown)
-                          {r3Qual.rank ? ` • Qualifier Rank #${r3Qual.rank}` : ''}.
+                          You have been officially selected to advance to Round 3 (Rapid Fire Showdown).
                         </div>
                       </div>
                     </div>
@@ -1050,7 +1028,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
                           OFFICIAL RESULT: NOT SELECTED FOR ROUND 3
                         </div>
                         <div style={{ color: '#FECACA', fontSize: '0.82rem', marginTop: '2px' }}>
-                          Only the top {r3Qual.qualifiedCount > 0 ? `${r3Qual.qualifiedCount} ` : ''}finalists from Round 2 progressed to the Round 3 Grand Finale. Thank you for competing!
+                          You were not selected to advance from Round 2 to the Round 3 Grand Finale. Thank you for competing!
                         </div>
                       </div>
                     </div>

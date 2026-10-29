@@ -6,6 +6,8 @@ interface CompetitionArenaPageProps {
   roundStates: RoundStateMap;
   competitionStatus?: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
   activeParticipant: Participant | null;
+  showLeaderboard?: boolean;
+  onOpenLeaderboard?: () => void;
   onSelectRound: (roundId: number) => void;
   onShowQualificationPopup?: (targetRound: 2 | 3) => void;
   onBackToHome: () => void;
@@ -80,6 +82,8 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
   roundStates,
   competitionStatus = 'LIVE',
   activeParticipant,
+  showLeaderboard = false,
+  onOpenLeaderboard,
   onSelectRound,
   onShowQualificationPopup,
   onBackToHome,
@@ -192,6 +196,32 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
           </div>
 
           <div className="arena-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {showLeaderboard && onOpenLeaderboard && (
+              <button
+                type="button"
+                onClick={onOpenLeaderboard}
+                id="btn-arena-live-leaderboard"
+                title="View Official Tournament Leaderboard"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 14px',
+                  borderRadius: '999px',
+                  border: '1.5px solid rgba(245, 158, 11, 0.55)',
+                  background: 'linear-gradient(135deg, rgba(180, 83, 9, 0.45) 0%, rgba(245, 158, 11, 0.25) 100%)',
+                  color: '#FDE68A',
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 16px rgba(245, 158, 11, 0.25)',
+                  backdropFilter: 'blur(12px)',
+                }}
+              >
+                <Icon name="trophy" size={15} />
+                <span>Official Leaderboard</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('bb:open-announcement-centre'))}
@@ -562,7 +592,6 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       </div>
                       <div style={{ fontSize: '13px', color: '#A7F3D0', marginTop: '2px' }}>
                         Round {activeStageQual.sourceRound} Score: <strong style={{ color: '#FFFFFF' }}>{activeStageQual.score ?? 0} PTS</strong>
-                        {activeStageQual.rank ? ` • Qualifier Rank #${activeStageQual.rank}` : ''}
                       </div>
                     </div>
                   </div>
@@ -625,7 +654,7 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                         You Have Not Qualified for Round {activeRoundMeta.id}
                       </div>
                       <div style={{ fontSize: '13px', color: '#FECACA', marginTop: '2px' }}>
-                        Only the top {activeStageQual.qualifiedCount > 0 ? `${activeStageQual.qualifiedCount} ` : ''}candidates from Round {activeStageQual.sourceRound} were selected to advance to Round {activeRoundMeta.id}.
+                        You were not selected to advance from Round {activeStageQual.sourceRound} to Round {activeRoundMeta.id}.
                       </div>
                     </div>
                   </div>
@@ -730,7 +759,7 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700, fontSize: '13.5px' }}>
                     <Icon name="award" size={18} />
                     <span>
-                      You have qualified for <strong style={{ color: '#FFFFFF' }}>Round {nextStageQual.targetRound}</strong>!{nextStageQual.rank ? ` (Rank #${nextStageQual.rank})` : ''}
+                      You have qualified for <strong style={{ color: '#FFFFFF' }}>Round {nextStageQual.targetRound}</strong>!
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>

@@ -223,16 +223,25 @@ export function App() {
         status: 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
         active_round: number | null;
         registration_open: boolean;
+        leaderboard_published?: boolean;
+        leaderboardPublished?: boolean;
         round_states: Record<string, 'active' | 'locked' | 'completed'>;
       }>('/competition/state')
         .then((state) => {
           if (!isMounted || !state) return;
           setSettingsState((prev) => {
             const nextStatus = (state.status as 'NOT_STARTED' | 'LIVE' | 'PAUSED' | 'COMPLETED') || prev.competitionStatus || 'LIVE';
+            const nextLeaderboardPublished =
+              state.leaderboard_published !== undefined
+                ? Boolean(state.leaderboard_published)
+                : state.leaderboardPublished !== undefined
+                  ? Boolean(state.leaderboardPublished)
+                  : Boolean(prev.leaderboardPublished);
             const updated: AdminSettings = {
               ...prev,
               competitionStatus: nextStatus,
               isRegistrationOpen: state.registration_open ?? prev.isRegistrationOpen,
+              leaderboardPublished: nextLeaderboardPublished,
               roundStates: {
                 1: state.round_states?.['1'] || (state.round_states as Record<string, RoundStatus>)?.[1] || prev.roundStates[1] || 'active',
                 2: state.round_states?.['2'] || (state.round_states as Record<string, RoundStatus>)?.[2] || prev.roundStates[2] || 'locked',
@@ -271,6 +280,7 @@ export function App() {
         body: JSON.stringify({
           status: next.competitionStatus,
           registrationOpen: next.isRegistrationOpen,
+          leaderboardPublished: Boolean(next.leaderboardPublished),
           roundStates: {
             '1': next.roundStates[1] || 'active',
             '2': next.roundStates[2] || 'locked',
@@ -618,6 +628,8 @@ export function App() {
           roundStates={settings.roundStates}
           competitionStatus={settings.competitionStatus}
           activeParticipant={activeParticipant}
+          showLeaderboard={Boolean(settings.leaderboardPublished)}
+          onOpenLeaderboard={() => navigateToView('projector')}
           onSelectRound={handleSelectRoundCard}
           onShowQualificationPopup={handleShowQualificationPopup}
           onBackToHome={() => navigateToView('home')}
@@ -716,12 +728,73 @@ export function App() {
         </AdminSecurityGate>
       )}
 
-      {/* 9. PROJECTOR SCOREBOARD */}
+      {/* 9. PROJECTOR SCOREBOARD (Restricted for participants unless published by Admin) */}
       {effectiveView === 'projector' && (
-        <ProjectorLeaderboard
-          onReturnToArena={() => navigateToView('home')}
-          onOpenAdmin={() => navigateToView('admin')}
-        />
+        isAdminAuthenticated || settings.leaderboardPublished ? (
+          <ProjectorLeaderboard
+            onReturnToArena={() => navigateToView(activeParticipant ? 'arena' : 'home')}
+            onOpenAdmin={() => navigateToView('admin')}
+          />
+        ) : (
+          <div
+            style={{
+              minHeight: '100vh',
+              background: '#050814',
+              color: '#F8FAFC',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '520px',
+                width: '100%',
+                background: 'linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(9, 13, 28, 0.98))',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '18px',
+                padding: '32px 28px',
+                textAlign: 'center',
+                boxShadow: '0 24px 64px rgba(0, 0, 0, 0.75)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '5px 14px',
+                  borderRadius: '999px',
+                  background: 'rgba(245, 158, 11, 0.14)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  color: '#FBBF24',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  marginBottom: '16px',
+                }}
+              >
+                🔒 Official Leaderboard Restricted
+              </div>
+              <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#F8FAFC', marginBottom: '10px' }}>
+                Standings Currently Hidden by Admin
+              </h2>
+              <p style={{ fontSize: '0.92rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '24px' }}>
+                Live leaderboard standings and rank telemetry are restricted during active evaluation. The leaderboard will be displayed here only when published by the Tournament Administrator.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigateToView(activeParticipant ? 'arena' : 'home')}
+                style={{ width: '100%', justifyContent: 'center', padding: '12px 20px', fontWeight: 800 }}
+              >
+                ← Return to Competition Arena
+              </button>
+            </div>
+          </div>
+        )
       )}
 
       {/* ARENA TRANSITION ANIMATION OVERLAY */}

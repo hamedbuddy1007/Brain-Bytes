@@ -122,6 +122,7 @@ export interface LeaderboardEntry {
 
 export interface AdminSettings {
   isRegistrationOpen: boolean;
+  leaderboardPublished?: boolean;
   activeJoinCodes: string[];
   arenaNotice: string;
   roundStates: RoundStateMap;
@@ -131,6 +132,7 @@ export interface AdminSettings {
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   isRegistrationOpen: true,
+  leaderboardPublished: false,
   activeJoinCodes: ['BYTE2026', 'DATAMANIA26', 'SOLAR26'],
   arenaNotice: 'Welcome to Data Mania: Brain Bytes 2026.',
   roundStates: {

@@ -199,24 +199,29 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
 
 
 
-  // Keep the latest callback in a ref so the attempt-start effect does not re-run (and re-POST) on every parent render
+  // Keep the latest callbacks in refs so the attempt-start effect does not re-run (and re-POST) on every parent render
   const onRecordScoreRef = useRef(onRecordScore);
   useEffect(() => {
     onRecordScoreRef.current = onRecordScore;
   }, [onRecordScore]);
 
+  const onExitRef = useRef(onExit);
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
   // Sync answers, review marks & visited state to localStorage across changes
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(`bb_answers_r1_${participantKey}`, JSON.stringify(selectedAnswers));
     } catch (err) {
       console.warn('Failed to save answers to localStorage:', err);
     }
-  }, [selectedAnswers, participantKey, isSubmitted, attemptId]);
+  }, [selectedAnswers, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_marked_r1_${participantKey}`,
@@ -225,10 +230,10 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     } catch (err) {
       console.warn('Failed to save marked questions to localStorage:', err);
     }
-  }, [markedForReview, participantKey, isSubmitted, attemptId]);
+  }, [markedForReview, participantKey, isSubmitted]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted || !attemptId) return;
+    if (!participantKey || isSubmitted) return;
     try {
       localStorage.setItem(
         `bb_visited_r1_${participantKey}`,
@@ -237,7 +242,7 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     } catch {
       // ignore
     }
-  }, [visitedQuestions, participantKey, isSubmitted, attemptId]);
+  }, [visitedQuestions, participantKey, isSubmitted]);
 
   // Accidental tab close / reload protection while attempt is active
   useEffect(() => {
@@ -388,8 +393,8 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
             ? localStorage.getItem(`bb_attempt_id_r1_${participantKey}`)
             : null;
 
-          // If attempt ID is not yet stored or changed (e.g. fresh start, round reset, or purge), discard any stale local answers
-          if (!savedAttemptId || savedAttemptId !== String(attempt.id)) {
+          // Only discard local answers if a DIFFERENT attempt ID was previously stored (e.g. admin reset the round)
+          if (savedAttemptId && savedAttemptId !== String(attempt.id)) {
             const firstQId = roundQuestions[0]?.id || 1;
             setSelectedAnswers({});
             setMarkedForReview(new Set());
@@ -424,36 +429,18 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
       })
       .catch((err: unknown) => {
         console.warn('Attempt initialization notice for Round 1:', err);
-        setSelectedAnswers({});
-        setMarkedForReview(new Set());
-        if (participantKey) {
-          try {
-            localStorage.removeItem(`bb_answers_r1_${participantKey}`);
-            localStorage.removeItem(`bb_marked_r1_${participantKey}`);
-            localStorage.removeItem(`bb_submitted_r1_${participantKey}`);
-            localStorage.removeItem(`bb_score_r1_${participantKey}`);
-            localStorage.removeItem(`bb_review_r1_${participantKey}`);
-            localStorage.removeItem(`bb_attempt_id_r1_${participantKey}`);
-          } catch {
-            // ignore
-          }
-        }
-        setIsSubmitted(false);
-        setFinalScore(null);
-        setReviewData({});
-
         const isAuthErr = err instanceof ApiError && err.status === 401;
         if (isAuthErr) {
           if (typeof window !== 'undefined') {
             window.location.hash = '#/';
           }
-          if (onExit) onExit();
+          if (onExitRef.current) onExitRef.current();
         }
       });
     return () => {
       isMounted = false;
     };
-  }, [participantKey, applyReviewPayload, onExit]);
+  }, [participantKey, applyReviewPayload, roundQuestions]);
 
   // Synchronize on authoritative round reset
   useEffect(() => {
@@ -818,18 +805,10 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
     const qId = currentQuestion.id;
 
     setVisitedQuestions((prev) => new Set(prev).add(qId));
-    setSelectedAnswers((prev) => {
-      // If clicking the currently selected option, toggle / deselect it
-      if (prev[qId] === optionIdx) {
-        const next = { ...prev };
-        delete next[qId];
-        return next;
-      }
-      return {
-        ...prev,
-        [qId]: optionIdx,
-      };
-    });
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [qId]: optionIdx,
+    }));
   };
 
   // Clear current question response
@@ -1014,8 +993,7 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
                           CONGRATULATIONS! YOU HAVE QUALIFIED FOR ROUND 2!
                         </div>
                         <div style={{ color: '#A7F3D0', fontSize: '0.82rem', marginTop: '2px' }}>
-                          You have been officially selected to advance to Round 2 (Graph Challenge)
-                          {r2Qual.rank ? ` • Qualifier Rank #${r2Qual.rank}` : ''}.
+                          You have been officially selected to advance to Round 2 (Graph Challenge).
                         </div>
                       </div>
                     </div>
@@ -1047,7 +1025,7 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
                           OFFICIAL RESULT: NOT SELECTED FOR ROUND 2
                         </div>
                         <div style={{ color: '#FECACA', fontSize: '0.82rem', marginTop: '2px' }}>
-                          Only the top {r2Qual.qualifiedCount > 0 ? `${r2Qual.qualifiedCount} ` : ''}candidates from Round 1 progressed to Round 2. Thank you for competing!
+                          You were not selected to advance from Round 1 to Round 2. Thank you for competing!
                         </div>
                       </div>
                     </div>
