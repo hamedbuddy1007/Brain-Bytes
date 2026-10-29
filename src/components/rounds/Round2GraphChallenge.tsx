@@ -50,8 +50,22 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(() => {
     if (!participantKey) return {};
     try {
+      const savedAttemptId = localStorage.getItem(`bb_attempt_id_r2_${participantKey}`);
+      if (!savedAttemptId) return {};
       const saved = localStorage.getItem(`bb_answers_r2_${participantKey}`);
-      return saved ? JSON.parse(saved) : {};
+      if (!saved) return {};
+      const parsed = JSON.parse(saved);
+      const clean: Record<number, number> = {};
+      if (parsed && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed)) {
+          const numK = Number(k);
+          const numV = Number(v);
+          if (Number.isInteger(numK) && numK >= 1 && numK <= 30 && typeof v === 'number' && Number.isInteger(numV) && numV >= 0 && numV <= 3) {
+            clean[numK] = numV;
+          }
+        }
+      }
+      return clean;
     } catch {
       return {};
     }
@@ -61,6 +75,8 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(() => {
     if (!participantKey) return new Set<number>();
     try {
+      const savedAttemptId = localStorage.getItem(`bb_attempt_id_r2_${participantKey}`);
+      if (!savedAttemptId) return new Set<number>();
       const saved = localStorage.getItem(`bb_marked_r2_${participantKey}`);
       return saved ? new Set<number>(JSON.parse(saved)) : new Set<number>();
     } catch {
@@ -68,9 +84,21 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     }
   });
 
-  // Visited tracking
+  // Visited tracking persisted to localStorage per active attempt
   const [visitedQuestions, setVisitedQuestions] = useState<Set<number>>(() => {
     const firstQId = roundQuestions[0]?.id || 1;
+    if (!participantKey) return new Set([firstQId]);
+    try {
+      const savedAttemptId = localStorage.getItem(`bb_attempt_id_r2_${participantKey}`);
+      if (!savedAttemptId) return new Set([firstQId]);
+      const saved = localStorage.getItem(`bb_visited_r2_${participantKey}`);
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr)) return new Set<number>([...arr.map(Number), firstQId]);
+      }
+    } catch {
+      // ignore
+    }
     return new Set([firstQId]);
   });
 
@@ -182,18 +210,18 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     onRecordScoreRef.current = onRecordScore;
   }, [onRecordScore]);
 
-  // Sync answers & review marks to localStorage across changes
+  // Sync answers, review marks & visited state to localStorage across changes
   useEffect(() => {
-    if (!participantKey || isSubmitted) return;
+    if (!participantKey || isSubmitted || !attemptId) return;
     try {
       localStorage.setItem(`bb_answers_r2_${participantKey}`, JSON.stringify(selectedAnswers));
     } catch (err) {
       console.warn('Failed to save answers to localStorage:', err);
     }
-  }, [selectedAnswers, participantKey, isSubmitted]);
+  }, [selectedAnswers, participantKey, isSubmitted, attemptId]);
 
   useEffect(() => {
-    if (!participantKey || isSubmitted) return;
+    if (!participantKey || isSubmitted || !attemptId) return;
     try {
       localStorage.setItem(
         `bb_marked_r2_${participantKey}`,
@@ -202,7 +230,19 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     } catch (err) {
       console.warn('Failed to save marked questions to localStorage:', err);
     }
-  }, [markedForReview, participantKey, isSubmitted]);
+  }, [markedForReview, participantKey, isSubmitted, attemptId]);
+
+  useEffect(() => {
+    if (!participantKey || isSubmitted || !attemptId) return;
+    try {
+      localStorage.setItem(
+        `bb_visited_r2_${participantKey}`,
+        JSON.stringify(Array.from(visitedQuestions))
+      );
+    } catch {
+      // ignore
+    }
+  }, [visitedQuestions, participantKey, isSubmitted, attemptId]);
 
   // Accidental tab close / reload protection while attempt is active
   useEffect(() => {
@@ -215,21 +255,21 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitted, deadlineMs]);
 
-  // Helper to ingest review payload returned by backend
+  // Helper to ingest review payload returned by backend (strictly keyed by sort_order / canonical question ID)
   const applyReviewPayload = useCallback(
     (
       review?: QuestionReview[],
-      answers?: Record<string | number, number | null> | Array<{ question_id?: number; questionId?: number; selected_option?: number | null; selectedOption?: number | null }>
+      answers?: Record<string | number, number | null> | Array<{ question_id?: number; questionId?: number; sort_order?: number; sortOrder?: number; selected_option?: number | null; selectedOption?: number | null }>
     ) => {
       const qIdToSortOrder: Record<number, number> = {};
 
       if (review && Array.isArray(review)) {
         const rMap: Record<number, QuestionReview> = {};
         for (const r of review) {
-          rMap[r.id] = r;
-          if (r.sort_order !== undefined) {
-            rMap[r.sort_order] = r;
-            qIdToSortOrder[r.id] = r.sort_order;
+          const canonicalKey = r.sort_order !== undefined && r.sort_order !== null ? Number(r.sort_order) : Number(r.id);
+          rMap[canonicalKey] = r;
+          if (r.id !== undefined && r.sort_order !== undefined) {
+            qIdToSortOrder[Number(r.id)] = Number(r.sort_order);
           }
         }
         setReviewData(rMap);
@@ -245,38 +285,40 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
         const aMap: Record<number, number> = {};
         if (Array.isArray(answers)) {
           for (const a of answers) {
+            const rawSort = a.sort_order ?? a.sortOrder;
             const rawQId = a.question_id ?? a.questionId;
             const opt = a.selected_option ?? a.selectedOption;
-            if (rawQId !== undefined && opt !== null && opt !== undefined) {
-              const numQId = Number(rawQId);
-              aMap[numQId] = Number(opt);
-              if (qIdToSortOrder[numQId] !== undefined) {
-                aMap[qIdToSortOrder[numQId]] = Number(opt);
+            if (opt !== null && opt !== undefined && Number.isInteger(Number(opt)) && Number(opt) >= 0 && Number(opt) <= 3) {
+              const canonicalKey = rawSort !== undefined
+                ? Number(rawSort)
+                : rawQId !== undefined && qIdToSortOrder[Number(rawQId)] !== undefined
+                  ? qIdToSortOrder[Number(rawQId)]
+                  : Number(rawQId);
+              if (Number.isInteger(canonicalKey) && canonicalKey >= 1) {
+                aMap[canonicalKey] = Number(opt);
               }
             }
           }
         } else if (typeof answers === 'object') {
-          for (const [rawQId, opt] of Object.entries(answers)) {
-            if (opt !== null && opt !== undefined) {
-              const numQId = Number(rawQId);
-              aMap[numQId] = Number(opt);
-              if (qIdToSortOrder[numQId] !== undefined) {
-                aMap[qIdToSortOrder[numQId]] = Number(opt);
+          for (const [rawKey, opt] of Object.entries(answers)) {
+            if (opt !== null && opt !== undefined && Number.isInteger(Number(opt)) && Number(opt) >= 0 && Number(opt) <= 3) {
+              const numKey = Number(rawKey);
+              if (Number.isInteger(numKey) && numKey >= 1 && numKey <= 30) {
+                aMap[numKey] = Number(opt);
+              } else if (qIdToSortOrder[numKey] !== undefined) {
+                aMap[qIdToSortOrder[numKey]] = Number(opt);
               }
             }
           }
         }
-        setSelectedAnswers((prev) => {
-          const nextAnswers = { ...prev, ...aMap };
-          if (participantKey) {
-            try {
-              localStorage.setItem(`bb_answers_r2_${participantKey}`, JSON.stringify(nextAnswers));
-            } catch {
-              // ignore
-            }
+        setSelectedAnswers(aMap);
+        if (participantKey) {
+          try {
+            localStorage.setItem(`bb_answers_r2_${participantKey}`, JSON.stringify(aMap));
+          } catch {
+            // ignore
           }
-          return nextAnswers;
-        });
+        }
       }
     },
     [participantKey]
@@ -351,14 +393,17 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
             ? localStorage.getItem(`bb_attempt_id_r2_${participantKey}`)
             : null;
 
-          // If attempt ID changed (e.g. after round reset or purge), discard stale answers
-          if (savedAttemptId && savedAttemptId !== String(attempt.id)) {
+          // If attempt ID is not yet stored or changed (e.g. fresh start, round reset, or purge), discard any stale local answers
+          if (!savedAttemptId || savedAttemptId !== String(attempt.id)) {
+            const firstQId = roundQuestions[0]?.id || 1;
             setSelectedAnswers({});
             setMarkedForReview(new Set());
+            setVisitedQuestions(new Set([firstQId]));
             if (participantKey) {
               try {
                 localStorage.removeItem(`bb_answers_r2_${participantKey}`);
                 localStorage.removeItem(`bb_marked_r2_${participantKey}`);
+                localStorage.removeItem(`bb_visited_r2_${participantKey}`);
               } catch {
                 // ignore
               }
@@ -577,11 +622,20 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const formattedAnswers = roundQuestions.map((q, idx) => ({
-      questionId: q.id,
-      sortOrder: idx + 1,
-      selectedOption: selectedAnswers[q.id] !== undefined ? selectedAnswers[q.id] : null,
-    }));
+    const formattedAnswers = roundQuestions.map((q) => {
+      const rawAns = selectedAnswers[q.id];
+      const isValidSelection =
+        visitedQuestions.has(q.id) &&
+        typeof rawAns === 'number' &&
+        Number.isInteger(rawAns) &&
+        rawAns >= 0 &&
+        rawAns <= 3;
+      return {
+        questionId: q.id,
+        sortOrder: q.id,
+        selectedOption: isValidSelection ? rawAns : null,
+      };
+    });
 
     try {
       const result = await apiRequest<{
@@ -657,7 +711,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
       }
       setIsSubmitModalOpen(true);
     }
-  }, [isSubmitted, attemptId, roundQuestions, selectedAnswers, applyReviewPayload, participant, onRecordScore, participantKey, tryReauth]);
+  }, [isSubmitted, attemptId, roundQuestions, selectedAnswers, visitedQuestions, applyReviewPayload, participant, onRecordScore, participantKey, tryReauth]);
 
   const handleAutoSubmit = useCallback(() => {
     handleConfirmSubmit();
@@ -769,6 +823,7 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
     if (isSubmitted || isCompetitionPaused) return;
     const qId = currentQuestion.id;
 
+    setVisitedQuestions((prev) => new Set(prev).add(qId));
     setSelectedAnswers((prev) => {
       if (prev[qId] === optionIdx) {
         const next = { ...prev };
@@ -1039,18 +1094,8 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
               {roundQuestions.map((q, idx) => {
                 const rev =
                   reviewData[q.id] ??
-                  (q.numberStr ? reviewData[Number(q.numberStr)] : undefined) ??
-                  Object.values(reviewData).find(
-                    (r) =>
-                      r.sort_order === q.id ||
-                      r.sort_order === Number(q.numberStr) ||
-                      r.id === q.id
-                  );
-                const userAns =
-                  selectedAnswers[q.id] ??
-                  (q.numberStr ? selectedAnswers[Number(q.numberStr)] : undefined) ??
-                  (rev?.id !== undefined ? selectedAnswers[rev.id] : undefined) ??
-                  (rev?.sort_order !== undefined ? selectedAnswers[rev.sort_order] : undefined);
+                  Object.values(reviewData).find((r) => r.sort_order === q.id);
+                const userAns = selectedAnswers[q.id];
                 const correctAnswer =
                   rev?.correct_answer !== undefined && rev?.correct_answer !== -1
                     ? rev.correct_answer

@@ -78,9 +78,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                 STANDARD ROUND DURATIONS
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontFamily: 'JetBrains Mono, monospace', color: '#B8B2B7' }}>
-                <span>Round 1: 10 mins</span>
-                <span>Round 2: 10 mins</span>
-                <span>Round 3: 3 mins</span>
+                <span>Round 1: 15 mins</span>
+                <span>Round 2: 15 mins</span>
+                <span>Round 3: 5 mins</span>
               </div>
             </div>
 

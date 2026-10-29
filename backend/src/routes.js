@@ -808,9 +808,9 @@ router.post('/rounds/:roundId/attempts/start', requireAuth('participant'), async
           );
           const userAnswers = {};
           for (const r of userAnswersResult.rows) {
-            userAnswers[r.question_id] = r.selected_option;
-            if (r.sort_order !== null && r.sort_order !== undefined) {
-              userAnswers[r.sort_order] = r.selected_option;
+            if (r.selected_option !== null && r.selected_option !== undefined) {
+              const key = (r.sort_order !== null && r.sort_order !== undefined) ? Number(r.sort_order) : Number(r.question_id);
+              userAnswers[key] = Number(r.selected_option);
             }
           }
           return {
@@ -890,8 +890,8 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
       id: z.coerce.number().int().positive().optional(),
       sortOrder: z.coerce.number().int().positive().optional(),
       sort_order: z.coerce.number().int().positive().optional(),
-      selectedOption: z.coerce.number().int().nonnegative().nullable().optional(),
-      selected_option: z.coerce.number().int().nonnegative().nullable().optional(),
+      selectedOption: z.union([z.number().int().min(0).max(3), z.null()]).optional(),
+      selected_option: z.union([z.number().int().min(0).max(3), z.null()]).optional(),
     })).max(100).safeParse(req.body?.answers);
     if (!Number.isSafeInteger(attemptId) || attemptId < 1 || !answers.success) {
       return res.status(400).json({ error: 'Invalid submission.' });
@@ -912,9 +912,9 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
         );
         const userAnswers = {};
         for (const r of userAnswersResult.rows) {
-          userAnswers[r.question_id] = r.selected_option;
-          if (r.sort_order !== null && r.sort_order !== undefined) {
-            userAnswers[r.sort_order] = r.selected_option;
+          if (r.selected_option !== null && r.selected_option !== undefined) {
+            const key = (r.sort_order !== null && r.sort_order !== undefined) ? Number(r.sort_order) : Number(r.question_id);
+            userAnswers[key] = Number(r.selected_option);
           }
         }
         return {
@@ -984,7 +984,7 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
         } else {
           selected = byDbId.get(qDbId);
         }
-        if (selected === undefined || selected === null) {
+        if (selected === undefined || selected === null || !Number.isInteger(selected) || selected < 0 || selected > 3) {
           unansweredCount += 1;
           continue;
         }
@@ -1032,9 +1032,9 @@ router.post('/attempts/:attemptId/submit', requireAuth('participant'), async (re
       );
       const userAnswers = {};
       for (const r of userAnswersResult.rows) {
-        userAnswers[r.question_id] = r.selected_option;
-        if (r.sort_order !== null && r.sort_order !== undefined) {
-          userAnswers[r.sort_order] = r.selected_option;
+        if (r.selected_option !== null && r.selected_option !== undefined) {
+          const key = (r.sort_order !== null && r.sort_order !== undefined) ? Number(r.sort_order) : Number(r.question_id);
+          userAnswers[key] = Number(r.selected_option);
         }
       }
 

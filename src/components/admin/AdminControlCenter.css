@@ -219,6 +219,7 @@
    ========================================================================== */
 .admin-main-canvas {
   margin-left: 0;
+  padding-top: 68px;
   width: 100%;
   min-height: 100vh;
   flex: 1;
@@ -229,25 +230,31 @@
 }
 
 .admin-top-bar {
-  background-color: rgba(18, 22, 34, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 68px;
+  z-index: 950;
+  background-color: rgba(14, 18, 30, 0.94);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   border-bottom: 1px solid var(--admin-border-subtle);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  padding: 14px 28px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  position: sticky;
-  top: 0;
-  z-index: 40;
+  gap: 16px;
 }
 
 .admin-top-left {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
+  flex: 1;
 }
 
 .admin-header-brand-btn,
@@ -2702,18 +2709,23 @@
 
   .admin-main-canvas {
     margin-left: 0 !important;
+    padding-top: 64px !important;
     width: 100% !important;
     min-width: 0;
   }
 
-  .admin-mobile-quick-strip {
-    display: flex;
-  }
-
   .admin-top-bar {
-    padding: 10px 16px;
-    flex-wrap: wrap;
-    gap: 10px;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 64px !important;
+    padding: 0 16px !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
   }
 
   .overview-container {
@@ -2745,16 +2757,28 @@
 }
 
 @media (max-width: 768px) {
+  .admin-main-canvas {
+    padding-top: 62px !important;
+  }
+
   .admin-top-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px 12px;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 62px !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 0 12px !important;
   }
 
   .admin-top-left {
     justify-content: flex-start;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     gap: 10px;
   }
 
@@ -2764,7 +2788,7 @@
   }
 
   .admin-header-title {
-    font-size: 0.94rem;
+    font-size: 0.92rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2780,16 +2804,18 @@
   .admin-top-right {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    justify-content: flex-end;
+    width: auto;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .admin-status-indicator,
   .admin-round-indicator {
     padding: 5px 9px;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   .btn-projector-shortcut,
@@ -2913,8 +2939,15 @@
   }
 
   .admin-round-indicator {
-    width: 100%;
-    justify-content: space-between;
+    display: none;
+  }
+
+  .burger-btn-label {
+    display: none;
+  }
+
+  .admin-burger-menu-btn {
+    padding: 8px 10px;
   }
 
   .top-btn-text {
