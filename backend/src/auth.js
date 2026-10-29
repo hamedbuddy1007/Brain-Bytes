@@ -21,7 +21,7 @@ export function issueSession(res, identity) {
   const token = jwt.sign(
     { sub: String(identity.id), role: identity.role },
     secret(),
-    { expiresIn: ONE_DAY_SECONDS }
+    { algorithm: 'HS256', expiresIn: ONE_DAY_SECONDS }
   );
 
   const cookieOptions = {
@@ -76,12 +76,17 @@ export function extractAuth(req, expectedRole = null) {
 
     if (!token) return null;
 
-    const session = jwt.verify(token, secret());
+    const session = jwt.verify(token, secret(), { algorithms: ['HS256'] });
     if (expectedRole && session.role !== expectedRole) {
       return null;
     }
 
-    return { id: Number(session.sub), role: session.role };
+    const numericId = Number(session.sub);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+      return null;
+    }
+
+    return { id: numericId, role: session.role };
   } catch {
     return null;
   }
@@ -110,12 +115,17 @@ export function requireAuth(role) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const session = jwt.verify(token, secret());
+      const session = jwt.verify(token, secret(), { algorithms: ['HS256'] });
       if (role && session.role !== role) {
         return res.status(403).json({ error: 'Insufficient permissions' });
       }
 
-      req.auth = { id: Number(session.sub), role: session.role };
+      const numericId = Number(session.sub);
+      if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+        return res.status(401).json({ error: 'Invalid session identity' });
+      }
+
+      req.auth = { id: numericId, role: session.role };
       next();
     } catch {
       return res.status(401).json({ error: 'Session expired or invalid' });

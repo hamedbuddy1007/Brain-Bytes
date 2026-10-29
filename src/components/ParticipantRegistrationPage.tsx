@@ -219,9 +219,10 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     id="reg-full-name"
                     type="text"
                     required
+                    maxLength={100}
                     placeholder="Enter your full name"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => setFullName(e.target.value.replace(/[\x00-\x1F\x7F<>]/g, '').slice(0, 100))}
                     className="reg-input"
                     autoFocus
                   />
@@ -239,9 +240,10 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                     id="reg-roll-number"
                     type="text"
                     required
+                    maxLength={50}
                     placeholder="Enter roll number / hall ticket ID"
                     value={rollNumber}
-                    onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+                    onChange={(e) => setRollNumber(e.target.value.replace(/[\x00-\x1F\x7F<>]/g, '').toUpperCase().slice(0, 50))}
                     className="reg-input uppercase-text"
                   />
                 </div>

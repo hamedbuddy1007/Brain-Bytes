@@ -84,7 +84,17 @@ app.use(helmet({
   noSniff: true,
   xssFilter: true,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
 }));
+
+// Additional Permissions-Policy & Cache-Control security headers
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  if (req.path.includes('/admin') || req.path.includes('/auth')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  }
+  next();
+});
 
 // Dynamic CORS configuration respecting same-origin host and configured origins
 app.use((req, res, next) => {
@@ -169,6 +179,13 @@ export const participantLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+export const adminApiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 400,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+
 // Apply granular rate limiting
 app.use('/api/auth/admin/login', adminLoginLimiter);
 app.use('/auth/admin/login', adminLoginLimiter);
@@ -182,8 +199,14 @@ app.use('/participants/register', participantRegisterLimiter);
 app.use('/api/participants/proctor-event', proctorEventLimiter);
 app.use('/participants/proctor-event', proctorEventLimiter);
 
+app.use('/api/attempts', submissionLimiter);
+app.use('/attempts', submissionLimiter);
+
 app.use('/api/auth', authLimiter);
 app.use('/auth', authLimiter);
+
+app.use('/api/admin', adminApiLimiter);
+app.use('/admin', adminApiLimiter);
 
 app.use('/api/participants', participantLimiter);
 app.use('/participants', participantLimiter);

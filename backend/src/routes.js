@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query, withTransaction } from './db.js';
@@ -7,6 +8,8 @@ import { clearSession, issueSession, requireAuth, extractAuth, secret } from './
 
 export const router = Router();
 const roundSchema = z.number().int().min(1).max(3);
+// Precomputed bcrypt cost-12 dummy hash to ensure constant-time admin login verification when identifier is unknown
+const DUMMY_BCRYPT_HASH = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4oL2.1pG2u';
 
 async function assertRoundQualification(client, participantId, roundId) {
   if (roundId === 1) return;
@@ -140,14 +143,21 @@ function generateAccessCode() {
   const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let code = 'DS-';
   for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[crypto.randomInt(0, chars.length)];
   }
   return code;
 }
 
 export function sanitizeText(val, maxLen = 200) {
   if (typeof val !== 'string') return '';
-  return val.replace(/\0/g, '').replace(/<[^>]*>?/gm, '').trim().slice(0, maxLen);
+  return val
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/vbscript\s*:/gi, '')
+    .replace(/data\s*:\s*text\/html/gi, '')
+    .trim()
+    .slice(0, maxLen);
 }
 
 const participantRegisterSchema = z.object({
@@ -178,19 +188,17 @@ router.post('/auth/admin/login', async (req, res, next) => {
     }
     const { identifier, password } = body.data;
 
-    // Secure authentication against database bcrypt password_hash
+    // Secure authentication against database bcrypt password_hash (constant-time comparison against DUMMY_BCRYPT_HASH if user not found)
     const adminResult = await query(
       'SELECT id, username, email, password_hash FROM admins WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1) LIMIT 1',
       [identifier]
     );
 
-    if (!adminResult.rowCount) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
-    }
+    const adminRecord = adminResult.rows[0] || null;
+    const targetHash = adminRecord ? adminRecord.password_hash : DUMMY_BCRYPT_HASH;
+    const passwordValid = await bcrypt.compare(password, targetHash);
 
-    const adminRecord = adminResult.rows[0];
-    const passwordValid = await bcrypt.compare(password, adminRecord.password_hash);
-    if (!passwordValid) {
+    if (!adminRecord || !passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
@@ -346,7 +354,7 @@ router.post('/participants/register', async (req, res, next) => {
     const registrationToken = jwt.sign(
       { rollNumber: normalizedRoll, sub: String(participant.id), type: 'registration_verifier' },
       secret(),
-      { expiresIn: 86400 }
+      { algorithm: 'HS256', expiresIn: 86400 }
     );
 
     res.cookie('bb_reg_token', registrationToken, {
@@ -402,7 +410,7 @@ router.get('/participants/registration-status/:rollNumber', async (req, res, nex
 
     if (regToken) {
       try {
-        const verified = jwt.verify(regToken, secret());
+        const verified = jwt.verify(regToken, secret(), { algorithms: ['HS256'] });
         if (
           (verified?.type === 'registration_verifier' && verified?.rollNumber?.toUpperCase() === roll.toUpperCase()) ||
           verified?.role === 'admin'
@@ -1378,10 +1386,11 @@ router.get('/admin/participants/:id/answers', requireAuth('admin'), async (req, 
       attemptsByRound.set(Number(att.round_id), {
         id: Number(att.id),
         roundId: Number(att.round_id),
+        status: att.submitted_at ? 'SUBMITTED' : 'IN_PROGRESS',
         startedAt: att.started_at,
         deadlineAt: att.deadline_at,
         submittedAt: att.submitted_at,
-        score: att.score !== null && att.score !== undefined ? Number(att.score) : null,
+        score: att.score !== null && att.score !== undefined ? Number(att.score) : 0,
         correctCount: Number(att.correct_count ?? 0),
         incorrectCount: Number(att.incorrect_count ?? 0),
         unansweredCount: Number(att.unanswered_count ?? 0),
@@ -1430,11 +1439,15 @@ router.get('/admin/participants/:id/answers', requireAuth('admin'), async (req, 
 
         return {
           id: qId,
+          questionId: qId,
           sortOrder,
+          questionNumber: sortOrder,
           prompt: q.prompt,
           options: formattedOptions,
           correctAnswer,
           selectedOption: isAttempted ? selectedOption : null,
+          isAttempted,
+          isCorrect,
           status,
           pointsAwarded,
           pointsCorrect: Number(q.points_correct ?? 1),

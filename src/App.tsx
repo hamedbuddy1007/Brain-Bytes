@@ -77,23 +77,24 @@ export function App() {
   };
 
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    return Boolean(typeof window !== 'undefined' && localStorage.getItem('bb_admin_token'));
-  });
+  // Never trust localStorage token alone without server verification via GET /api/auth/admin/me
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [isVerifyingAdminSession, setIsVerifyingAdminSession] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
-    const isAdminView = path.startsWith('/admin') || hash.includes('admin');
-    return isAdminView && !localStorage.getItem('bb_admin_token');
+    const isAdminOrProjector =
+      path.startsWith('/admin') || hash.includes('admin') || path.includes('projector') || hash.includes('projector');
+    return isAdminOrProjector;
   });
   const [prefilledAccessCode, setPrefilledAccessCode] = useState<string>('');
   const [transitioningRound, setTransitioningRound] = useState<{ participant: Participant; roundId: number } | null>(null);
 
   // Restore/verify active admin session with backend GET /api/auth/admin/me
   useEffect(() => {
-    if (currentView !== 'admin') return;
+    if (currentView !== 'admin' && currentView !== 'projector') return;
     let isMounted = true;
+    setIsVerifyingAdminSession(true);
     checkAdminSession().then((authenticated) => {
       if (isMounted) {
         setIsAdminAuthenticated(authenticated);

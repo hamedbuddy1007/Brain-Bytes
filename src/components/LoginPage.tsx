@@ -143,9 +143,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   id="input-access-code"
                   type="text"
                   required
+                  maxLength={20}
                   placeholder="e.g. DS-A4X9"
                   value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setAccessCode(e.target.value.replace(/[\x00-\x1F\x7F<>]/g, '').toUpperCase().slice(0, 20))}
                   className="login-input-control"
                   autoFocus
                   disabled={isLoading}

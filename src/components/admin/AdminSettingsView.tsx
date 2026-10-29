@@ -30,13 +30,13 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     }
   });
   const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean>(settings.isRegistrationOpen ?? true);
-  const [isPublicLeaderboard, setIsPublicLeaderboard] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('bb_admin_public_leaderboard') !== 'false';
-    } catch {
-      return true;
-    }
-  });
+  const [isPublicLeaderboard, setIsPublicLeaderboard] = useState<boolean>(() => Boolean(settings.leaderboardPublished));
+
+  // Admin password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [durationsMin, setDurationsMin] = useState<{ 1: number; 2: number; 3: number }>(() => {
     try {
@@ -66,10 +66,17 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     setIsRegistrationOpen(settings.isRegistrationOpen ?? true);
   }, [settings.isRegistrationOpen]);
 
+  useEffect(() => {
+    setIsPublicLeaderboard(Boolean(settings.leaderboardPublished));
+  }, [settings.leaderboardPublished]);
+
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  const sanitizeSettingText = (val: string, maxLen = 100) =>
+    val.replace(/[\x00-\x1F\x7F<>]/g, '').slice(0, maxLen);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -77,10 +84,12 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       const r1Min = Math.min(120, Math.max(1, Number(durationsMin[1]) || 10));
       const r2Min = Math.min(120, Math.max(1, Number(durationsMin[2]) || 10));
       const r3Min = Math.min(120, Math.max(1, Number(durationsMin[3]) || 3));
+      const cleanEventName = sanitizeSettingText(eventName, 100).trim() || 'DATA MANIA — BRAIN BYTES';
+      const cleanAuditorium = sanitizeSettingText(auditorium, 100).trim() || 'Auditorium Hall B // Cluster 01';
 
       try {
-        localStorage.setItem('bb_admin_event_name', eventName.trim() || 'DATA MANIA — BRAIN BYTES');
-        localStorage.setItem('bb_admin_auditorium', auditorium.trim() || 'Auditorium Hall B // Cluster 01');
+        localStorage.setItem('bb_admin_event_name', cleanEventName);
+        localStorage.setItem('bb_admin_auditorium', cleanAuditorium);
         localStorage.setItem('bb_admin_public_leaderboard', String(isPublicLeaderboard));
         localStorage.setItem(
           'bb_admin_durations',
@@ -93,6 +102,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       const nextSettings: AdminSettings = {
         ...settings,
         isRegistrationOpen,
+        leaderboardPublished: isPublicLeaderboard,
       };
       onUpdateSettings(nextSettings);
 
@@ -100,6 +110,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         method: 'PATCH',
         body: JSON.stringify({
           registrationOpen: isRegistrationOpen,
+          leaderboardPublished: isPublicLeaderboard,
           roundDurations: {
             '1': r1Min * 60,
             '2': r2Min * 60,
@@ -113,6 +124,42 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       showToast(err instanceof Error ? err.message : 'Failed to save settings.', 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleAdminPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isChangingPassword) return;
+    if (!currentPassword) {
+      showToast('Please enter your current admin password.', 'error');
+      return;
+    }
+    if (!newPassword || newPassword.length < 12) {
+      showToast('New password must contain at least 12 characters.', 'error');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      showToast('New password and confirmation do not match.', 'error');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await apiRequest('/auth/admin/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      showToast('Admin password rotated and bcrypt-hashed successfully!');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update admin password.', 'error');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -279,8 +326,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               <input
                 type="text"
                 className="search-input-field"
+                maxLength={100}
                 value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
+                onChange={(e) => setEventName(sanitizeSettingText(e.target.value, 100))}
                 style={{ width: '100%' }}
               />
             </div>
@@ -292,8 +340,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               <input
                 type="text"
                 className="search-input-field"
+                maxLength={100}
                 value={auditorium}
-                onChange={(e) => setAuditorium(e.target.value)}
+                onChange={(e) => setAuditorium(sanitizeSettingText(e.target.value, 100))}
                 style={{ width: '100%' }}
               />
             </div>
@@ -483,6 +532,67 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               {isPublicLeaderboard ? 'PUBLIC' : 'MUTED'}
             </button>
           </div>
+
+          {/* Admin Password Rotation (bcrypt cost-12) */}
+          <form
+            onSubmit={(e) => void handleAdminPasswordChange(e)}
+            style={{
+              borderTop: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+              paddingTop: '16px',
+              marginTop: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Icon name="lock" size={14} style={{ color: '#38BDF8' }} />
+              <span>ROTATE ADMIN PASSWORD (BCRYPT-12)</span>
+            </div>
+            <input
+              type="password"
+              className="search-input-field"
+              placeholder="Current admin password"
+              autoComplete="current-password"
+              maxLength={256}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              style={{ width: '100%' }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <input
+                type="password"
+                className="search-input-field"
+                placeholder="New password (min 12 chars)"
+                autoComplete="new-password"
+                minLength={12}
+                maxLength={256}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{ width: '100%' }}
+              />
+              <input
+                type="password"
+                className="search-input-field"
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+                minLength={12}
+                maxLength={256}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isChangingPassword}
+              className="btn btn-secondary btn-sm"
+              style={{ alignSelf: 'flex-start', borderColor: '#38BDF8', color: '#38BDF8', fontWeight: 700 }}
+            >
+              <Icon name="shield" size={13} />
+              <span>{isChangingPassword ? 'Updating Password...' : 'Update Admin Password'}</span>
+            </button>
+          </form>
         </div>
       </div>
 

@@ -157,12 +157,13 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
                   id="admin-username-input"
                   name="username"
                   type="text"
+                  maxLength={254}
                   autoComplete="username"
                   className="admin-text-input"
                   placeholder="Enter username or email"
                   value={identifier}
                   onChange={(e) => {
-                    setIdentifier(e.target.value);
+                    setIdentifier(e.target.value.replace(/[\x00-\x1F\x7F<>]/g, '').slice(0, 254));
                     if (error) setError(null);
                   }}
                   disabled={isSubmitting}
@@ -184,12 +185,13 @@ export const AdminSecurityGate: React.FC<AdminSecurityGateProps> = ({
                   id="admin-password-input"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
+                  maxLength={256}
                   autoComplete="current-password"
                   className="admin-text-input"
                   placeholder="Enter password"
                   value={password}
                   onChange={(e) => {
-                    setPassword(e.target.value);
+                    setPassword(e.target.value.slice(0, 256));
                     if (error) setError(null);
                   }}
                   disabled={isSubmitting}

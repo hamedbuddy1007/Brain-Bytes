@@ -28,14 +28,21 @@ dist-ssr
 
 # Backend secrets and generated files
 backend/.env
+backend/.env.*
+!backend/.env.example
 backend/node_modules/
 backend/coverage/
 
-# Local secrets
+# Local secrets, certificates, and backups
 AUTH_SECRET.txt
 .env*
 !.env.example
-
+!backend/.env.example
+*.pem
+*.key
+*.crt
+*.bak
+*.sql.gz
 
 # Local destructive test utility
 scripts/wipe_test_data.cjs

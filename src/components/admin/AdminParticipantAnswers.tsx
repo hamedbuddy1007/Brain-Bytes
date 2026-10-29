@@ -4,17 +4,19 @@ import { apiRequest } from '../../services/apiClient';
 import type { RegistryParticipant } from '../../types/competition';
 
 interface QuestionAnswerItem {
+  id?: number;
   questionId: number;
+  sortOrder?: number;
   questionNumber: number;
   prompt: string;
-  options: string[];
+  options: Array<string | { key?: string; label?: string; subtext?: string }>;
   selectedOption: number | null;
   correctAnswer: number;
   isAttempted: boolean;
   isCorrect: boolean;
   status: 'CORRECT' | 'INCORRECT' | 'UNATTEMPTED';
   pointsAwarded: number;
-  answeredAt: string | null;
+  answeredAt?: string | null;
 }
 
 interface RoundAnswerSheet {
@@ -607,9 +609,17 @@ export const AdminParticipantAnswers: React.FC<AdminParticipantAnswersProps> = (
                             gap: '8px',
                           }}
                         >
-                          {(q.options || []).map((optText, optIdx) => {
+                          {(q.options || []).map((optItem, optIdx) => {
                             const isSelectedByParticipant = q.selectedOption === optIdx;
                             const isCorrectOption = q.correctAnswer === optIdx;
+                            const optLabel =
+                              typeof optItem === 'string'
+                                ? optItem
+                                : optItem?.label ?? String(optItem ?? '');
+                            const optKey =
+                              typeof optItem === 'object' && optItem?.key
+                                ? optItem.key
+                                : OPTION_KEYS[optIdx] || String(optIdx + 1);
 
                             let optBg = 'rgba(15, 23, 42, 0.6)';
                             let optBorder = 'rgba(255, 255, 255, 0.08)';
@@ -643,9 +653,9 @@ export const AdminParticipantAnswers: React.FC<AdminParticipantAnswersProps> = (
                               >
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                   <strong style={{ fontFamily: 'monospace', color: isCorrectOption ? '#4ADE80' : isSelectedByParticipant ? '#F87171' : '#94A3B8' }}>
-                                    {OPTION_KEYS[optIdx] || optIdx + 1}.
+                                    {optKey}.
                                   </strong>
-                                  <span style={{ lineHeight: 1.4 }}>{optText}</span>
+                                  <span style={{ lineHeight: 1.4 }}>{optLabel}</span>
                                 </div>
 
                                 {(isSelectedByParticipant || isCorrectOption) && (
