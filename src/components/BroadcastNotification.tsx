@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from './Icon';
 import { apiRequest } from '../services/apiClient';
+import type { BroadcastPriority } from '../types/competition';
 
 interface CompetitionStateResponse {
   broadcastMessage?: string | null;
   broadcastTimestamp?: string | null;
+  broadcastTitle?: string | null;
+  broadcastPriority?: BroadcastPriority | null;
 }
 
 export const BroadcastNotification: React.FC = () => {
-  const [broadcast, setBroadcast] = useState<{ message: string; timestamp: string } | null>(null);
+  const [broadcast, setBroadcast] = useState<{
+    message: string;
+    timestamp: string;
+    title?: string | null;
+    priority: BroadcastPriority;
+  } | null>(null);
   const [dismissedTimestamp, setDismissedTimestamp] = useState<string | null>(() => {
     try {
       return sessionStorage.getItem('bb_dismissed_broadcast_ts');
@@ -32,6 +40,8 @@ export const BroadcastNotification: React.FC = () => {
             setBroadcast({
               message: state.broadcastMessage,
               timestamp: ts,
+              title: state.broadcastTitle || null,
+              priority: state.broadcastPriority || 'INFO',
             });
           } else {
             setBroadcast(null);
@@ -71,6 +81,35 @@ export const BroadcastNotification: React.FC = () => {
     }
   })();
 
+  const priorityConfig: Record<BroadcastPriority, { label: string; borderColor: string; tagBg: string; tagColor: string }> = {
+    INFO: {
+      label: 'OFFICIAL BROADCAST',
+      borderColor: '#F97316',
+      tagBg: '#FFF7ED',
+      tagColor: '#EA580C',
+    },
+    WARNING: {
+      label: 'IMPORTANT NOTICE',
+      borderColor: '#D97706',
+      tagBg: '#FFFBEB',
+      tagColor: '#B45309',
+    },
+    URGENT: {
+      label: 'URGENT ALERT',
+      borderColor: '#DC2626',
+      tagBg: '#FEF2F2',
+      tagColor: '#DC2626',
+    },
+    QUALIFICATION: {
+      label: 'QUALIFICATION ANNOUNCEMENT',
+      borderColor: '#16A34A',
+      tagBg: '#ECFDF5',
+      tagColor: '#15803D',
+    },
+  };
+
+  const pStyle = priorityConfig[broadcast.priority] || priorityConfig.INFO;
+
   return (
     <aside
       className="broadcast-notice-container"
@@ -78,17 +117,32 @@ export const BroadcastNotification: React.FC = () => {
       aria-live="assertive"
       id="live-broadcast-notice"
     >
-      <div className="broadcast-flashing-card">
+      <div
+        className="broadcast-flashing-card"
+        style={{
+          borderColor: pStyle.borderColor,
+        }}
+      >
         {/* Animated glowing border effect */}
         <div className="broadcast-glow-aura" aria-hidden="true" />
 
         <div className="broadcast-header">
           <div className="broadcast-title-group">
             <span className="broadcast-beacon">
-              <span className="beacon-ping" />
-              <span className="beacon-dot" />
+              <span className="beacon-ping" style={{ backgroundColor: pStyle.borderColor }} />
+              <span className="beacon-dot" style={{ backgroundColor: pStyle.borderColor }} />
             </span>
-            <span className="broadcast-tag">OFFICIAL BROADCAST</span>
+            <span
+              className="broadcast-tag"
+              style={{
+                backgroundColor: pStyle.tagBg,
+                color: pStyle.tagColor,
+                padding: '2px 8px',
+                borderRadius: '6px',
+              }}
+            >
+              {pStyle.label}
+            </span>
           </div>
 
           <button
@@ -104,6 +158,18 @@ export const BroadcastNotification: React.FC = () => {
         </div>
 
         <div className="broadcast-body">
+          {broadcast.title && (
+            <div
+              style={{
+                fontWeight: 800,
+                fontSize: '14px',
+                color: '#0F172A',
+                marginBottom: '4px',
+              }}
+            >
+              {broadcast.title}
+            </div>
+          )}
           <p className="broadcast-message-text">{broadcast.message}</p>
         </div>
 

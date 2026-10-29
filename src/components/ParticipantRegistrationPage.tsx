@@ -21,7 +21,6 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
   const [rollNumber, setRollNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [yearOfStudy, setYearOfStudy] = useState('');
-  const [collegeName, setCollegeName] = useState('');
 
   const [step, setStep] = useState<RegistrationStep>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,7 +116,6 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
           rollNumber: trimmedRoll,
           department,
           yearOfStudy,
-          collegeName: collegeName.trim() || 'Department of Technical Education',
         }),
       });
 
@@ -299,24 +297,6 @@ export const ParticipantRegistrationPage: React.FC<ParticipantRegistrationPagePr
                       ))}
                     </select>
                   </div>
-                </div>
-              </div>
-
-              {/* College / Institution Name */}
-              <div className="reg-form-group">
-                <label htmlFor="reg-college" className="reg-label">
-                  Institution / College Name
-                </label>
-                <div className="reg-input-wrapper">
-                  <Icon name="layers" size={17} className="reg-input-icon" />
-                  <input
-                    id="reg-college"
-                    type="text"
-                    placeholder="Enter institution / college name"
-                    value={collegeName}
-                    onChange={(e) => setCollegeName(e.target.value)}
-                    className="reg-input"
-                  />
                 </div>
               </div>
 

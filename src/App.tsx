@@ -5,6 +5,7 @@ import { ParticipantRegistrationPage } from './components/ParticipantRegistratio
 import { LoginPage } from './components/LoginPage';
 import { ArenaTransitionOverlay } from './components/ArenaTransitionOverlay';
 import { BroadcastNotification } from './components/BroadcastNotification';
+import { QualificationPopupModal } from './components/QualificationPopupModal';
 import { Round1MCQ } from './components/rounds/Round1MCQ';
 import { Round2GraphChallenge } from './components/rounds/Round2GraphChallenge';
 import { Round3RapidFire } from './components/rounds/Round3RapidFire';
@@ -15,6 +16,7 @@ import type {
   Participant,
   AdminSettings,
   RoundStatus,
+  RoundQualificationInfo,
 } from './types/competition';
 import { checkAdminSession, terminateAdminSession } from './services/adminAuthService';
 import {
@@ -108,33 +110,86 @@ export function App() {
 
   // Persistent Active Participant across page refreshes
   const [activeParticipant, setActiveParticipantState] = useState<Participant | null>(() => getActiveParticipant());
+  const [activeQualificationPopup, setActiveQualificationPopup] = useState<RoundQualificationInfo | null>(null);
+
   const setActiveParticipant = (p: Participant | null) => {
     setActiveParticipantState(p);
     persistActiveParticipant(p);
   };
 
-  // Restore/verify active participant session with backend GET /api/participants/me
+  // Automatically trigger QualificationPopupModal once per qualification execution for logged-in participant
+  const evaluateQualificationPopups = (p: Participant) => {
+    if (!p?.rollNumber || !p?.qualifications) return;
+    const r3Qual = p.qualifications.round3;
+    const r2Qual = p.qualifications.round2;
+
+    if (r3Qual?.qualificationExecuted && (r3Qual.sourceSubmitted || r3Qual.isQualified)) {
+      const seenKey = `bb_qual_popup_${p.rollNumber}_r3_${r3Qual.executedAt || 'exec'}_${r3Qual.status}`;
+      try {
+        if (!sessionStorage.getItem(seenKey)) {
+          sessionStorage.setItem(seenKey, '1');
+          setActiveQualificationPopup(r3Qual);
+          return;
+        }
+      } catch {}
+    }
+
+    if (r2Qual?.qualificationExecuted && (r2Qual.sourceSubmitted || r2Qual.isQualified)) {
+      const seenKey = `bb_qual_popup_${p.rollNumber}_r2_${r2Qual.executedAt || 'exec'}_${r2Qual.status}`;
+      try {
+        if (!sessionStorage.getItem(seenKey)) {
+          sessionStorage.setItem(seenKey, '1');
+          setActiveQualificationPopup(r2Qual);
+          return;
+        }
+      } catch {}
+    }
+  };
+
+  // Restore/verify and poll active participant session with backend GET /api/participants/me
   useEffect(() => {
+    if (currentView === 'admin' || currentView === 'projector') return;
     let isMounted = true;
-    apiRequest<Participant>('/participants/me')
-      .then((p) => {
-        if (!isMounted) return;
-        if (p?.rollNumber) {
-          setActiveParticipantState(p);
-          persistActiveParticipant(p);
 
-          // If participant is on round-2/round-3 but has not submitted the prerequisite round, redirect to arena
-          const hasR1 = p.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
-          const hasR2 = p.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
+    const refreshParticipantMe = (isInitial = false) => {
+      // Only poll if initial mount or participant is currently logged in
+      if (!isInitial && !getActiveParticipant() && !localStorage.getItem('bb_participant_token')) {
+        return;
+      }
+      apiRequest<Participant>('/participants/me')
+        .then((p) => {
+          if (!isMounted) return;
+          if (p?.rollNumber) {
+            setActiveParticipantState(p);
+            persistActiveParticipant(p);
+            evaluateQualificationPopups(p);
 
-          if (currentView === 'round-2' && !hasR1) {
-            setCurrentView('arena');
-            window.history.replaceState(null, '', '#/arena');
-          } else if (currentView === 'round-3' && !hasR2) {
-            setCurrentView('arena');
-            window.history.replaceState(null, '', '#/arena');
+            // Enforce strict qualification gating on round-2 and round-3
+            const isQualR2 = Boolean(p.qualifications?.round2?.isQualified);
+            const isQualR3 = Boolean(p.qualifications?.round3?.isQualified);
+
+            if (currentView === 'round-2' && !isQualR2) {
+              setCurrentView('arena');
+              window.history.replaceState(null, '', '#/arena');
+            } else if (currentView === 'round-3' && !isQualR3) {
+              setCurrentView('arena');
+              window.history.replaceState(null, '', '#/arena');
+            }
+          } else if (isInitial) {
+            setActiveParticipantState(null);
+            persistActiveParticipant(null);
+            try {
+              sessionStorage.removeItem('bb_active_participant');
+            } catch {}
+            if (currentView.startsWith('round-')) {
+              setCurrentView('home');
+              window.history.replaceState(null, '', '#/');
+            }
           }
-        } else {
+        })
+        .catch(() => {
+          if (!isMounted || !isInitial) return;
+          // Participant session expired, invalid, or reset in database: wipe local session immediately
           setActiveParticipantState(null);
           persistActiveParticipant(null);
           try {
@@ -144,25 +199,17 @@ export function App() {
             setCurrentView('home');
             window.history.replaceState(null, '', '#/');
           }
-        }
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        // Participant session expired, invalid, or reset in database: wipe local session immediately
-        setActiveParticipantState(null);
-        persistActiveParticipant(null);
-        try {
-          sessionStorage.removeItem('bb_active_participant');
-        } catch {}
-        if (currentView.startsWith('round-')) {
-          setCurrentView('home');
-          window.history.replaceState(null, '', '#/');
-        }
-      });
+        });
+    };
+
+    refreshParticipantMe(true);
+    const intervalId = setInterval(() => refreshParticipantMe(false), 3500);
+
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [currentView]);
 
   // Synchronized Event State across Participant and Admin interfaces
   const [settings, setSettingsState] = useState<AdminSettings>(() => getAdminSettings());
@@ -331,11 +378,53 @@ export function App() {
     }
   };
 
+  // Open the Qualification Popup Modal for Round 2 or Round 3
+  const handleShowQualificationPopup = (targetRound: 2 | 3) => {
+    if (!activeParticipant) return;
+    const qual = targetRound === 2 ? activeParticipant.qualifications?.round2 : activeParticipant.qualifications?.round3;
+    if (qual) {
+      setActiveQualificationPopup(qual);
+      return;
+    }
+    const sourceRound = targetRound - 1;
+    const sourceAttempt = activeParticipant.attempts?.find(
+      (a) => a.roundId === sourceRound || (a as { round_id?: number }).round_id === sourceRound
+    );
+    const sourceSubmitted = Boolean(
+      sourceAttempt && ((sourceAttempt as { submittedAt?: string | null }).submittedAt || (sourceAttempt as { submitted_at?: string | null }).submitted_at)
+    );
+    setActiveQualificationPopup({
+      sourceRound,
+      targetRound,
+      qualificationExecuted: false,
+      executedAt: null,
+      qualifiedCount: 0,
+      sourceSubmitted,
+      isQualified: false,
+      status: sourceSubmitted ? 'AWAITING_DECISION' : 'NOT_SUBMITTED',
+      rank: null,
+      score: sourceAttempt?.score ?? null,
+    });
+  };
+
   // Participant Card Selection in Arena
   const handleSelectRoundCard = (roundId: number) => {
     if (!activeParticipant) {
       navigateToView('login');
       return;
+    }
+
+    // Strict Qualification Check for Round 2 and Round 3
+    if (roundId === 2 || roundId === 3) {
+      const qual = roundId === 2 ? activeParticipant.qualifications?.round2 : activeParticipant.qualifications?.round3;
+      if (!qual?.isQualified) {
+        if (qual?.status === 'NOT_QUALIFIED' || qual?.status === 'AWAITING_DECISION') {
+          setActiveQualificationPopup(qual);
+          return;
+        }
+        handleShowQualificationPopup(roundId as 2 | 3);
+        return;
+      }
     }
 
     if (settings.competitionStatus === 'PAUSED') {
@@ -357,32 +446,31 @@ export function App() {
       return;
     }
     if (targetStatus === 'locked') {
-      alert(`Round ${roundId} is currently locked by the event administration.`);
+      navigateToView('arena');
+      alert(`Round ${roundId} is currently locked by the event administration. Stand by in the Arena Cockpit for stage unlock.`);
       return;
     }
 
-    // Prerequisite checks
-    if (roundId === 2) {
-      const hasR1 = activeParticipant.attempts?.some(
-        (a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) &&
-               ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at)
-      );
-      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR1) {
-        alert('You must qualify and submit Round 1 before entering Round 2.');
-        return;
-      }
-    } else if (roundId === 3) {
-      const hasR2 = activeParticipant.attempts?.some(
-        (a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) &&
-               ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at)
-      );
-      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR2) {
-        alert('You must qualify and submit Round 2 before entering the Round 3 Finale.');
-        return;
-      }
-    }
-
     setTransitioningRound({ participant: activeParticipant, roundId });
+  };
+
+  // Handler when participant clicks "Proceed to Round 2 / 3" from post-submission screen
+  const handleProceedFromSubmittedRound = (targetRound: 2 | 3) => {
+    if (!activeParticipant) {
+      navigateToView('login');
+      return;
+    }
+    const qual = targetRound === 2 ? activeParticipant.qualifications?.round2 : activeParticipant.qualifications?.round3;
+    if (!qual?.isQualified) {
+      handleShowQualificationPopup(targetRound);
+      return;
+    }
+    const targetStatus = settings.roundStates[targetRound] || (settings.roundStates as Record<string, RoundStatus>)[String(targetRound)] || 'locked';
+    if (targetStatus === 'active' && settings.competitionStatus === 'LIVE') {
+      handleSelectRoundCard(targetRound);
+    } else {
+      navigateToView('arena');
+    }
   };
 
   const handleParticipantLogin = (participant: Participant) => {
@@ -390,6 +478,7 @@ export function App() {
       localStorage.setItem('bb_participant_token', participant.token);
     }
     setActiveParticipant(participant);
+    evaluateQualificationPopups(participant);
     navigateToView('arena');
   };
 
@@ -399,6 +488,7 @@ export function App() {
     } catch {}
     localStorage.removeItem('bb_participant_token');
     setActiveParticipant(null);
+    setActiveQualificationPopup(null);
     navigateToView('home');
   };
 
@@ -424,7 +514,7 @@ export function App() {
     }
   };
 
-  // Enforce access control: derive effective view so locked rounds or unverified sessions fallback to arena / home
+  // Enforce access control: derive effective view so locked rounds or unqualified sessions fallback to arena / home
   const effectiveView: AppView = (() => {
     if (currentView === 'home') return 'home';
     if (currentView === 'arena') return 'arena';
@@ -438,15 +528,13 @@ export function App() {
     }
     if (currentView === 'round-2') {
       if (settings.roundStates[2] === 'locked' || !activeParticipant) return 'arena';
-      const hasR1 = activeParticipant.attempts?.some((a) => (a.roundId === 1 || (a as { round_id?: number }).round_id === 1) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
-      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR1) {
+      if (!activeParticipant.qualifications?.round2?.isQualified) {
         return 'arena';
       }
     }
     if (currentView === 'round-3') {
       if (settings.roundStates[3] === 'locked' || !activeParticipant) return 'arena';
-      const hasR2 = activeParticipant.attempts?.some((a) => (a.roundId === 2 || (a as { round_id?: number }).round_id === 2) && ((a as { submittedAt?: string | null }).submittedAt || (a as { submitted_at?: string | null }).submitted_at));
-      if (activeParticipant.attempts && activeParticipant.attempts.length > 0 && !hasR2) {
+      if (!activeParticipant.qualifications?.round3?.isQualified) {
         return 'arena';
       }
     }
@@ -455,11 +543,21 @@ export function App() {
 
   const handleRecordRoundScore = () => {
     void refreshLeaderboardFromServer();
+    apiRequest<Participant>('/participants/me')
+      .then((p) => {
+        if (p?.rollNumber) {
+          setActiveParticipantState(p);
+          persistActiveParticipant(p);
+          evaluateQualificationPopups(p);
+        }
+      })
+      .catch(() => {});
   };
 
   // Admin Actions
   const handleResetParticipants = () => {
     setActiveParticipant(null);
+    setActiveQualificationPopup(null);
   };
 
   const handleResetRounds = () => {
@@ -521,6 +619,7 @@ export function App() {
           competitionStatus={settings.competitionStatus}
           activeParticipant={activeParticipant}
           onSelectRound={handleSelectRoundCard}
+          onShowQualificationPopup={handleShowQualificationPopup}
           onBackToHome={() => navigateToView('home')}
           onOpenLogin={() => navigateToView('login')}
           onSignOut={handleParticipantSignOut}
@@ -564,7 +663,7 @@ export function App() {
           participant={activeParticipant}
           onExit={() => navigateToView('arena')}
           onRecordScore={handleRecordRoundScore}
-          onProceedToNextRound={() => navigateToView('round-2')}
+          onProceedToNextRound={() => handleProceedFromSubmittedRound(2)}
         />
       )}
 
@@ -574,7 +673,7 @@ export function App() {
           participant={activeParticipant}
           onExit={() => navigateToView('arena')}
           onRecordScore={handleRecordRoundScore}
-          onProceedToNextRound={() => navigateToView('round-3')}
+          onProceedToNextRound={() => handleProceedFromSubmittedRound(3)}
         />
       )}
 
@@ -631,6 +730,27 @@ export function App() {
           participantName={transitioningRound.participant.fullName}
           roundId={transitioningRound.roundId}
           onComplete={handleTransitionComplete}
+        />
+      )}
+
+      {/* QUALIFICATION SELECTION / ELIMINATION POPUP MODAL */}
+      {activeParticipant && activeQualificationPopup && effectiveView !== 'admin' && effectiveView !== 'projector' && (
+        <QualificationPopupModal
+          isOpen={Boolean(activeQualificationPopup)}
+          participantName={activeParticipant.fullName}
+          rollNumber={activeParticipant.rollNumber}
+          qualification={activeQualificationPopup}
+          targetRoundStatus={
+            settings.roundStates[activeQualificationPopup.targetRound] ||
+            (settings.roundStates as Record<string, RoundStatus>)[String(activeQualificationPopup.targetRound)] ||
+            'locked'
+          }
+          onClose={() => setActiveQualificationPopup(null)}
+          onProceedToNextRound={(targetRound) => {
+            if (targetRound === 2 || targetRound === 3) {
+              handleProceedFromSubmittedRound(targetRound);
+            }
+          }}
         />
       )}
 

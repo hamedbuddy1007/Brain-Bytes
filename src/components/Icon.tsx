@@ -59,7 +59,9 @@ export type IconName =
   | 'eye'
   | 'eye-off'
   | 'mail'
-  | 'keypad';
+  | 'keypad'
+  | 'x-circle'
+  | 'bell';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -521,6 +523,21 @@ export const Icon: React.FC<IconProps> = ({
         <svg {...common}>
           <rect width="18" height="18" x="3" y="3" rx="2" />
           <path d="M7 8h.01M12 8h.01M17 8h.01M7 12h.01M12 12h.01M17 12h.01M7 16h.01M12 16h.01M17 16h.01" />
+        </svg>
+      );
+    case 'x-circle':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      );
+    case 'bell':
+      return (
+        <svg {...common}>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
       );
     default:

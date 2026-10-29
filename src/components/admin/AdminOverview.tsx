@@ -68,19 +68,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       .catch(() => {});
   }, []);
 
-  const handleBroadcast = async () => {
-    const msg = prompt('Enter announcement for participant terminals:', 'Notice: 3 minutes remaining in current round.');
-    if (msg?.trim()) {
-      try {
-        await apiRequest('/admin/broadcast', {
-          method: 'POST',
-          body: JSON.stringify({ message: msg.trim() }),
-        });
-        setBroadcastMessage(msg.trim());
-      } catch (err) {
-        alert(`Failed to broadcast notice: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      }
-    }
+  const handleBroadcast = () => {
+    onNavigateTab('broadcasts');
   };
 
   const handleDismissBroadcast = async () => {

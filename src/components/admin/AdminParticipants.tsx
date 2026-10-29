@@ -163,6 +163,18 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
     }
   };
 
+  const handleQualifyOverride = async (id: string, targetRound: 2 | 3, qualified: boolean) => {
+    try {
+      await apiRequest(`/admin/participants/${id}/qualify-override`, {
+        method: 'POST',
+        body: JSON.stringify({ targetRound, qualified }),
+      });
+      await fetchParticipants();
+    } catch (err) {
+      alert(`Failed to update qualification status: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   const handleApproveAll = async () => {
     const pendingCount = participants.filter((p) => (p.approvalStatus || 'PENDING') === 'PENDING').length;
     if (pendingCount === 0) {
@@ -606,9 +618,20 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                                       ? 'is-eligible'
                                       : 'is-locked'
                                 }`}
+                              style={
+                                p.rounds?.[2]?.status === 'NOT_QUALIFIED'
+                                  ? { background: 'rgba(239, 68, 68, 0.14)', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)' }
+                                  : undefined
+                              }
                               title={`Round 2: ${p.rounds?.[2]?.status || 'LOCKED'}`}
                             >
-                              R2: {p.rounds?.[2]?.status === 'COMPLETED' ? 'SUBMITTED' : p.rounds?.[2]?.status || 'LOCKED'}
+                              R2: {p.rounds?.[2]?.status === 'COMPLETED'
+                                ? 'SUBMITTED'
+                                : p.rounds?.[2]?.status === 'ELIGIBLE'
+                                  ? 'QUALIFIED'
+                                  : p.rounds?.[2]?.status === 'NOT_QUALIFIED'
+                                    ? 'NOT QUALIFIED'
+                                    : p.rounds?.[2]?.status || 'LOCKED'}
                             </span>
                             <span
                               className={`round-pill-badge ${p.rounds?.[3]?.status === 'COMPLETED'
@@ -619,9 +642,20 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                                       ? 'is-eligible'
                                       : 'is-locked'
                                 }`}
+                              style={
+                                p.rounds?.[3]?.status === 'NOT_QUALIFIED'
+                                  ? { background: 'rgba(239, 68, 68, 0.14)', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)' }
+                                  : undefined
+                              }
                               title={`Round 3: ${p.rounds?.[3]?.status || 'LOCKED'}`}
                             >
-                              R3: {p.rounds?.[3]?.status === 'COMPLETED' ? 'SUBMITTED' : p.rounds?.[3]?.status || 'LOCKED'}
+                              R3: {p.rounds?.[3]?.status === 'COMPLETED'
+                                ? 'SUBMITTED'
+                                : p.rounds?.[3]?.status === 'ELIGIBLE'
+                                  ? 'QUALIFIED'
+                                  : p.rounds?.[3]?.status === 'NOT_QUALIFIED'
+                                    ? 'NOT QUALIFIED'
+                                    : p.rounds?.[3]?.status || 'LOCKED'}
                             </span>
                           </div>
                         </td>
@@ -819,14 +853,57 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                                   ? 'badge-eligible'
                                   : 'badge-locked'
                             }`}>
-                            {spR2?.status === 'COMPLETED' ? 'SUBMITTED' : spR2?.status || 'LOCKED'}
+                            {spR2?.status === 'COMPLETED'
+                              ? 'SUBMITTED'
+                              : spR2?.status === 'ELIGIBLE'
+                                ? 'QUALIFIED'
+                                : spR2?.status === 'NOT_QUALIFIED'
+                                  ? 'NOT QUALIFIED'
+                                  : spR2?.status || 'LOCKED'}
                           </span>
                         </div>
                         <div className="side-round-card-body">
-                          <div>Score: <strong>{spR2 && spR2.score !== null ? `${spR2.score} / 5 pts` : spR2?.eligible ? 'Eligible (Not attempted)' : 'Locked'}</strong></div>
+                          <div>Score: <strong>{spR2 && spR2.score !== null ? `${spR2.score} / 30 pts` : spR2?.eligible ? 'Qualified (Not attempted)' : spR2?.status === 'NOT_QUALIFIED' ? 'Not Qualified' : 'Locked'}</strong></div>
                           {spR2?.submitted && (
-                            <div>Correct: {spR2.solvedCount}/5 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR2.timeTakenSeconds)}</span></div>
+                            <div>Correct: {spR2.solvedCount}/30 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR2.timeTakenSeconds)}</span></div>
                           )}
+                          <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                            {!spR2?.eligible ? (
+                              <button
+                                type="button"
+                                onClick={() => handleQualifyOverride(selectedParticipant.id, 2, true)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #16A34A',
+                                  background: '#ECFDF5',
+                                  color: '#15803D',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                + Qualify for Round 2
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleQualifyOverride(selectedParticipant.id, 2, false)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #EF4444',
+                                  background: '#FEF2F2',
+                                  color: '#DC2626',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Revoke Round 2 Qualification
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -842,14 +919,57 @@ export const AdminParticipants: React.FC<AdminParticipantsProps> = () => {
                                   ? 'badge-eligible'
                                   : 'badge-locked'
                             }`}>
-                            {spR3?.status === 'COMPLETED' ? 'SUBMITTED' : spR3?.status || 'LOCKED'}
+                            {spR3?.status === 'COMPLETED'
+                              ? 'SUBMITTED'
+                              : spR3?.status === 'ELIGIBLE'
+                                ? 'QUALIFIED'
+                                : spR3?.status === 'NOT_QUALIFIED'
+                                  ? 'NOT QUALIFIED'
+                                  : spR3?.status || 'LOCKED'}
                           </span>
                         </div>
                         <div className="side-round-card-body">
-                          <div>Score: <strong>{spR3 && spR3.score !== null ? `${spR3.score} / 5 pts` : spR3?.eligible ? 'Eligible (Not attempted)' : 'Locked'}</strong></div>
+                          <div>Score: <strong>{spR3 && spR3.score !== null ? `${spR3.score} pts` : spR3?.eligible ? 'Qualified (Not attempted)' : spR3?.status === 'NOT_QUALIFIED' ? 'Not Qualified' : 'Locked'}</strong></div>
                           {spR3?.submitted && (
-                            <div>Correct: {spR3.solvedCount}/5 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR3.timeTakenSeconds)}</span></div>
+                            <div>Correct: {spR3.solvedCount}/30 &nbsp;•&nbsp; Time: <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{formatTimerValue(spR3.timeTakenSeconds)}</span></div>
                           )}
+                          <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                            {!spR3?.eligible ? (
+                              <button
+                                type="button"
+                                onClick={() => handleQualifyOverride(selectedParticipant.id, 3, true)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #16A34A',
+                                  background: '#ECFDF5',
+                                  color: '#15803D',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                + Qualify for Round 3
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleQualifyOverride(selectedParticipant.id, 3, false)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #EF4444',
+                                  background: '#FEF2F2',
+                                  color: '#DC2626',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Revoke Round 3 Qualification
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {/* Individual Time Extension Section */}

@@ -934,6 +934,103 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
               </div>
             </div>
 
+            {/* Live Round 3 Qualification Status Banner */}
+            {(() => {
+              const r3Qual = participant?.qualifications?.round3;
+              if (r3Qual?.status === 'QUALIFIED') {
+                return (
+                  <div
+                    style={{
+                      margin: '16px 0',
+                      padding: '16px 20px',
+                      borderRadius: '14px',
+                      background: 'rgba(16, 185, 129, 0.14)',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ color: '#10B981', display: 'flex' }}>
+                        <Icon name="trophy" size={24} />
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.95rem' }}>
+                          CONGRATULATIONS! YOU HAVE QUALIFIED FOR THE ROUND 3 GRAND FINALE!
+                        </div>
+                        <div style={{ color: '#A7F3D0', fontSize: '0.82rem', marginTop: '2px' }}>
+                          You have been officially selected to advance to Round 3 (Rapid Fire Showdown)
+                          {r3Qual.rank ? ` • Qualifier Rank #${r3Qual.rank}` : ''}.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              if (r3Qual?.status === 'NOT_QUALIFIED') {
+                return (
+                  <div
+                    style={{
+                      margin: '16px 0',
+                      padding: '16px 20px',
+                      borderRadius: '14px',
+                      background: 'rgba(239, 68, 68, 0.14)',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ color: '#F87171', display: 'flex' }}>
+                        <Icon name="x-circle" size={24} />
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ color: '#FCA5A5', fontWeight: 800, fontSize: '0.95rem' }}>
+                          OFFICIAL RESULT: NOT SELECTED FOR ROUND 3
+                        </div>
+                        <div style={{ color: '#FECACA', fontSize: '0.82rem', marginTop: '2px' }}>
+                          Only the top {r3Qual.qualifiedCount > 0 ? `${r3Qual.qualifiedCount} ` : ''}finalists from Round 2 progressed to the Round 3 Grand Finale. Thank you for competing!
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div
+                  style={{
+                    margin: '16px 0',
+                    padding: '15px 20px',
+                    borderRadius: '14px',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ color: '#FBBF24', display: 'flex', flexShrink: 0 }}>
+                    <Icon name="clock" size={22} />
+                  </div>
+                  <div>
+                    <div style={{ color: '#FDE68A', fontWeight: 800, fontSize: '0.9rem' }}>
+                      AWAITING ROUND 3 QUALIFICATION RESULTS
+                    </div>
+                    <div style={{ color: '#FCD34D', fontSize: '0.8rem', marginTop: '2px' }}>
+                      Your Round 2 submission is locked in. You will automatically receive a pop-up notification on this screen as soon as the administrator publishes the Grand Finale qualifiers.
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <h3 style={{ margin: '12px 0 4px', fontSize: '1rem', color: '#E0E0E0' }}>
               Performance Diagnostic Log:
             </h3>
@@ -1000,9 +1097,21 @@ export const Round2GraphChallenge: React.FC<Round2GraphChallengeProps> = ({
                   className="btn-save-next-prominent"
                   onClick={onProceedToNextRound}
                   id="btn-proceed-round-3"
-                  style={{ background: '#8E233B', borderColor: '#8E233B' }}
+                  style={
+                    participant?.qualifications?.round3?.status === 'QUALIFIED'
+                      ? { background: '#059669', borderColor: '#10B981' }
+                      : participant?.qualifications?.round3?.status === 'NOT_QUALIFIED'
+                        ? { background: '#7F1D1D', borderColor: '#EF4444' }
+                        : { background: '#8E233B', borderColor: '#8E233B' }
+                  }
                 >
-                  <span>Proceed to Round 3 (Rapid Fire)</span>
+                  <span>
+                    {participant?.qualifications?.round3?.status === 'QUALIFIED'
+                      ? 'Proceed to Round 3 (Rapid Fire)'
+                      : participant?.qualifications?.round3?.status === 'NOT_QUALIFIED'
+                        ? 'View Round 3 Qualification Result'
+                        : 'Check Round 3 Qualification Status'}
+                  </span>
                   <Icon name="arrow-right" size={18} />
                 </button>
               )}

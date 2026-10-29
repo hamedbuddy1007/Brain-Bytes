@@ -73,6 +73,67 @@ async function assertRoundQualification(client, participantId, roundId) {
   }
 }
 
+async function getParticipantQualificationMap(participantId, attemptsRows = []) {
+  const qualResult = await query(
+    `SELECT event_type, details, created_at
+       FROM audit_events
+      WHERE event_type IN ('qualification.executed', 'round2.qualified', 'round3.qualified')
+      ORDER BY created_at DESC, id DESC`,
+  );
+
+  const buildRoundQualification = (sourceRound, targetRound) => {
+    const execEvent = qualResult.rows.find(
+      (e) =>
+        e.event_type === 'qualification.executed' &&
+        String(e.details?.sourceRound) === String(sourceRound),
+    );
+    const qualEvent = qualResult.rows.find(
+      (e) =>
+        e.event_type === `round${targetRound}.qualified` &&
+        String(e.details?.participantId) === String(participantId),
+    );
+    const sourceAttempt = attemptsRows.find(
+      (a) =>
+        Number(a.round_id ?? a.roundId) === sourceRound &&
+        Boolean(a.submitted_at ?? a.submittedAt),
+    );
+
+    const qualificationExecuted = Boolean(execEvent);
+    const isQualified = Boolean(qualEvent);
+    const sourceSubmitted = Boolean(sourceAttempt);
+
+    let status = 'NOT_SUBMITTED';
+    if (qualificationExecuted) {
+      status = isQualified ? 'QUALIFIED' : 'NOT_QUALIFIED';
+    } else if (sourceSubmitted) {
+      status = 'AWAITING_DECISION';
+    }
+
+    return {
+      sourceRound,
+      targetRound,
+      qualificationExecuted,
+      executedAt: execEvent ? execEvent.created_at : null,
+      qualifiedCount: execEvent ? Number(execEvent.details?.qualifiedCount ?? 0) : 0,
+      sourceSubmitted,
+      isQualified,
+      status,
+      rank: qualEvent?.details?.rank ? Number(qualEvent.details.rank) : null,
+      score:
+        sourceAttempt?.score !== undefined && sourceAttempt?.score !== null
+          ? Number(sourceAttempt.score)
+          : qualEvent?.details?.score !== undefined
+          ? Number(qualEvent.details.score)
+          : null,
+    };
+  };
+
+  return {
+    round2: buildRoundQualification(1, 2),
+    round3: buildRoundQualification(2, 3),
+  };
+}
+
 
 
 function generateAccessCode() {
@@ -416,6 +477,7 @@ router.post('/participants/login-access-code', async (req, res, next) => {
       'SELECT id, round_id, started_at, deadline_at, submitted_at, score, correct_count, incorrect_count, unanswered_count, time_taken_seconds FROM attempts WHERE participant_id=$1 ORDER BY round_id ASC',
       [participant.id],
     );
+    const qualifications = await getParticipantQualificationMap(participant.id, attemptsResult.rows);
 
     res.json({
       token,
@@ -430,7 +492,21 @@ router.post('/participants/login-access-code', async (req, res, next) => {
       assignedSeat: participant.assigned_seat || `Station #${((Number(participant.id) - 1) % 120) + 1}`,
       registeredAt: participant.created_at,
       status: 'verified',
-      attempts: attemptsResult.rows,
+      attempts: attemptsResult.rows.map((row) => ({
+        id: Number(row.id),
+        roundId: Number(row.round_id),
+        round_id: Number(row.round_id),
+        startedAt: row.started_at,
+        deadlineAt: row.deadline_at,
+        submittedAt: row.submitted_at,
+        submitted_at: row.submitted_at,
+        score: row.score,
+        correctCount: row.correct_count,
+        incorrectCount: row.incorrect_count,
+        unansweredCount: row.unanswered_count,
+        timeTakenSeconds: row.time_taken_seconds,
+      })),
+      qualifications,
     });
   } catch (error) {
     next(error);
@@ -472,6 +548,11 @@ router.post('/participants/reauth', async (req, res, next) => {
     }
 
     const token = issueSession(res, { id: participant.id, role: 'participant' });
+    const attemptsResult = await query(
+      'SELECT id, round_id, started_at, deadline_at, submitted_at, score, correct_count, incorrect_count, unanswered_count, time_taken_seconds FROM attempts WHERE participant_id=$1 ORDER BY round_id ASC',
+      [participant.id],
+    );
+    const qualifications = await getParticipantQualificationMap(participant.id, attemptsResult.rows);
 
     res.json({
       token,
@@ -485,6 +566,7 @@ router.post('/participants/reauth', async (req, res, next) => {
       ticketId: participant.ticket_id,
       assignedSeat: participant.assigned_seat,
       status: 'verified',
+      qualifications,
     });
   } catch (error) {
     next(error);
@@ -504,6 +586,7 @@ router.get('/participants/me', requireAuth('participant'), async (req, res, next
       'SELECT id, round_id, started_at, deadline_at, submitted_at, score, correct_count, incorrect_count, unanswered_count, time_taken_seconds FROM attempts WHERE participant_id=$1 ORDER BY round_id ASC',
       [participant.id],
     );
+    const qualifications = await getParticipantQualificationMap(participant.id, attemptsResult.rows);
 
     res.json({
       id: Number(participant.id),
@@ -531,6 +614,7 @@ router.get('/participants/me', requireAuth('participant'), async (req, res, next
         unansweredCount: row.unanswered_count,
         timeTakenSeconds: row.time_taken_seconds,
       })),
+      qualifications,
     });
   } catch (error) {
     next(error);
@@ -561,12 +645,28 @@ router.post('/participants/proctor-event', requireAuth('participant'), async (re
 
 router.get('/competition/state', async (_req, res, next) => {
   try {
-    const result = await query('SELECT status, active_round, registration_open, round_states, round_durations, broadcast_message, broadcast_timestamp, updated_at FROM competition_state WHERE singleton=TRUE');
+    const result = await query(`
+      SELECT
+        status,
+        active_round,
+        registration_open,
+        round_states,
+        round_durations,
+        broadcast_message,
+        broadcast_timestamp,
+        updated_at,
+        (SELECT details FROM audit_events WHERE event_type = 'competition.broadcast' ORDER BY id DESC LIMIT 1) AS broadcast_meta
+      FROM competition_state
+      WHERE singleton=TRUE
+    `);
     const row = result.rows[0] || {};
+    const meta = row.broadcast_message ? (row.broadcast_meta || {}) : {};
     res.json({
       ...row,
       broadcastMessage: row.broadcast_message || null,
       broadcastTimestamp: row.broadcast_timestamp || null,
+      broadcastTitle: meta.title || null,
+      broadcastPriority: meta.priority || 'INFO',
     });
   } catch (error) {
     next(error);
@@ -1041,9 +1141,18 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
         r1Submitted &&
         r1QualExecuted &&
         r2QualifiedSet.has(participantId);
+      const r2NotQualified = r1QualExecuted && !r2QualifiedSet.has(participantId);
       const r2Submitted = Boolean(r2Attempt?.submittedAt);
       const r2Started = Boolean(r2Attempt?.startedAt);
-      const r2Status = r2Submitted ? 'COMPLETED' : r2Started ? 'IN_PROGRESS' : r2Eligible ? 'ELIGIBLE' : 'LOCKED';
+      const r2Status = r2Submitted
+        ? 'COMPLETED'
+        : r2Started
+        ? 'IN_PROGRESS'
+        : r2Eligible
+        ? 'ELIGIBLE'
+        : r2NotQualified
+        ? 'NOT_QUALIFIED'
+        : 'LOCKED';
       const r2Score = r2Submitted ? Number(r2Attempt.score ?? 0) : null;
       const r2Solved = r2Submitted ? Number(r2Attempt.correctCount ?? 0) : 0;
 
@@ -1052,9 +1161,18 @@ router.get('/admin/participants', requireAuth('admin'), async (_req, res, next) 
         r2Submitted &&
         r2QualExecuted &&
         r3QualifiedSet.has(participantId);
+      const r3NotQualified = r2QualExecuted && !r3QualifiedSet.has(participantId);
       const r3Submitted = Boolean(r3Attempt?.submittedAt);
       const r3Started = Boolean(r3Attempt?.startedAt);
-      const r3Status = r3Submitted ? 'COMPLETED' : r3Started ? 'IN_PROGRESS' : r3Eligible ? 'ELIGIBLE' : 'LOCKED';
+      const r3Status = r3Submitted
+        ? 'COMPLETED'
+        : r3Started
+        ? 'IN_PROGRESS'
+        : r3Eligible
+        ? 'ELIGIBLE'
+        : r3NotQualified
+        ? 'NOT_QUALIFIED'
+        : 'LOCKED';
       const r3Score = r3Submitted ? Number(r3Attempt.score ?? 0) : null;
       const r3Solved = r3Submitted ? Number(r3Attempt.correctCount ?? 0) : 0;
 
@@ -1248,38 +1366,104 @@ router.post('/admin/participants/approve-all', requireAuth('admin'), async (req,
   }
 });
 
-// Admin Broadcast Notice
-router.post('/admin/broadcast', requireAuth('admin'), async (req, res, next) => {
+// Admin Broadcasts & Announcements Center
+router.get('/admin/broadcasts', requireAuth('admin'), async (_req, res, next) => {
   try {
-    const body = z.object({
-      message: z.string().trim().min(1).max(500),
-    }).safeParse(req.body);
-    if (!body.success) {
-      return res.status(400).json({ error: 'Broadcast message is required (max 500 characters).' });
-    }
-    const msg = sanitizeText(body.data.message, 500);
-    await query(
-      'UPDATE competition_state SET broadcast_message = $1, broadcast_timestamp = NOW() WHERE singleton = TRUE',
-      [msg],
-    );
-    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
-      'admin',
-      req.auth.id,
-      'competition.broadcast',
-      JSON.stringify({ message: msg }),
+    const [stateResult, historyResult] = await Promise.all([
+      query('SELECT broadcast_message, broadcast_timestamp FROM competition_state WHERE singleton = TRUE'),
+      query(`
+        SELECT id, actor_id, details, created_at
+        FROM audit_events
+        WHERE event_type = 'competition.broadcast'
+        ORDER BY id DESC
+        LIMIT 50
+      `),
     ]);
-    res.json({ success: true, broadcastMessage: msg, broadcastTimestamp: new Date().toISOString() });
+
+    const stateRow = stateResult.rows[0] || {};
+    const latestMeta = historyResult.rows[0]?.details || {};
+
+    res.json({
+      activeBroadcast: stateRow.broadcast_message
+        ? {
+            message: stateRow.broadcast_message,
+            timestamp: stateRow.broadcast_timestamp,
+            title: latestMeta.title || null,
+            priority: latestMeta.priority || 'INFO',
+          }
+        : null,
+      history: historyResult.rows.map((row) => ({
+        id: Number(row.id),
+        message: row.details?.message || '',
+        title: row.details?.title || null,
+        priority: row.details?.priority || 'INFO',
+        createdAt: row.created_at,
+      })),
+    });
   } catch (error) {
     next(error);
   }
 });
 
-router.delete('/admin/broadcast', requireAuth('admin'), async (_req, res, next) => {
+router.post('/admin/broadcast', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const body = z.object({
+      message: z.string().trim().min(1).max(500),
+      title: z.string().trim().max(100).optional(),
+      priority: z.enum(['INFO', 'WARNING', 'URGENT', 'QUALIFICATION']).optional(),
+    }).safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ error: 'Broadcast message is required (max 500 characters).' });
+    }
+    const msg = sanitizeText(body.data.message, 500);
+    const title = body.data.title ? sanitizeText(body.data.title, 100) : null;
+    const priority = body.data.priority || 'INFO';
+
+    const stateUpdate = await query(
+      'UPDATE competition_state SET broadcast_message = $1, broadcast_timestamp = NOW() WHERE singleton = TRUE RETURNING broadcast_timestamp',
+      [msg],
+    );
+    const broadcastTimestamp = stateUpdate.rows[0]?.broadcast_timestamp || new Date().toISOString();
+
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      'competition.broadcast',
+      JSON.stringify({ message: msg, title, priority, timestamp: broadcastTimestamp }),
+    ]);
+    res.json({
+      success: true,
+      broadcastMessage: msg,
+      broadcastTitle: title,
+      broadcastPriority: priority,
+      broadcastTimestamp,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/admin/broadcast', requireAuth('admin'), async (req, res, next) => {
   try {
     await query(
       'UPDATE competition_state SET broadcast_message = NULL, broadcast_timestamp = NULL WHERE singleton = TRUE',
     );
+    await query('INSERT INTO audit_events(actor_type, actor_id, event_type, details) VALUES ($1,$2,$3,$4)', [
+      'admin',
+      req.auth.id,
+      'competition.broadcast_cleared',
+      JSON.stringify({ timestamp: new Date().toISOString() }),
+    ]);
     res.json({ success: true, message: 'Broadcast cleared.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/admin/broadcasts/history', requireAuth('admin'), async (_req, res, next) => {
+  try {
+    await query("DELETE FROM audit_events WHERE event_type IN ('competition.broadcast', 'competition.broadcast_cleared')");
+    res.json({ success: true, message: 'Broadcast history cleared.' });
   } catch (error) {
     next(error);
   }
@@ -1489,7 +1673,12 @@ router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, ne
     await withTransaction(async (client) => {
       // Re-running qualification replaces the previous list instead of adding to it.
       await client.query('DELETE FROM audit_events WHERE event_type=$1', [eventType]);
-      for (const row of result.rows) {
+      await client.query(
+        "DELETE FROM audit_events WHERE event_type='qualification.executed' AND (details->>'sourceRound')::int = $1",
+        [roundId],
+      );
+      for (let idx = 0; idx < result.rows.length; idx++) {
+        const row = result.rows[idx];
         await client.query('INSERT INTO audit_events(actor_type,actor_id,event_type,details) VALUES($1,$2,$3,$4)', [
           'system',
           row.participant_id,
@@ -1497,6 +1686,7 @@ router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, ne
           JSON.stringify({
             participantId: row.participant_id,
             sourceRound: roundId,
+            rank: idx + 1,
             score: row.score,
             timeTakenSeconds: Number(row.completion_time ?? row.time_taken_seconds ?? 0),
           }),
@@ -1510,6 +1700,87 @@ router.post('/admin/qualify/:roundId', requireAuth('admin'), async (req, res, ne
       ]);
     });
     res.json({ sourceRound: roundId, nextRound: roundId + 1, qualifiedCount: result.rowCount, qualifiedParticipantIds: result.rows.map((row) => Number(row.participant_id)) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/admin/participants/:id/qualify-override', requireAuth('admin'), async (req, res, next) => {
+  try {
+    const participantId = Number(req.params.id);
+    const targetRound = Number(req.body?.targetRound);
+    const qualified = Boolean(req.body?.qualified);
+    if (!Number.isInteger(participantId) || participantId <= 0) {
+      return res.status(400).json({ error: 'Invalid participant ID.' });
+    }
+    if (![2, 3].includes(targetRound)) {
+      return res.status(400).json({ error: 'Target round must be Round 2 or Round 3.' });
+    }
+    const sourceRound = targetRound - 1;
+    const eventType = `round${targetRound}.qualified`;
+
+    await withTransaction(async (client) => {
+      // Remove any existing qualification record for this participant in targetRound
+      await client.query(
+        'DELETE FROM audit_events WHERE event_type=$1 AND (actor_id=$2 OR (details->>\'participantId\')::int = $2)',
+        [eventType, participantId],
+      );
+
+      if (qualified) {
+        const attemptRes = await client.query(
+          'SELECT score, time_taken_seconds FROM attempts WHERE participant_id=$1 AND round_id=$2 LIMIT 1',
+          [participantId, sourceRound],
+        );
+        const score = attemptRes.rows[0]?.score ?? 0;
+        const timeTakenSeconds = Number(attemptRes.rows[0]?.time_taken_seconds ?? 0);
+        await client.query('INSERT INTO audit_events(actor_type,actor_id,event_type,details) VALUES($1,$2,$3,$4)', [
+          'admin',
+          participantId,
+          eventType,
+          JSON.stringify({
+            participantId,
+            sourceRound,
+            score,
+            timeTakenSeconds,
+            manualOverride: true,
+          }),
+        ]);
+      }
+
+      // Ensure qualification.executed exists for sourceRound so non-qualified candidates and this candidate get accurate status
+      const execCheck = await client.query(
+        "SELECT id FROM audit_events WHERE event_type='qualification.executed' AND (details->>'sourceRound')::int = $1 LIMIT 1",
+        [sourceRound],
+      );
+      const countRes = await client.query(
+        'SELECT COUNT(*)::int AS cnt FROM audit_events WHERE event_type=$1',
+        [eventType],
+      );
+      const qualifiedCount = countRes.rows[0]?.cnt ?? 0;
+      if (execCheck.rowCount === 0) {
+        await client.query('INSERT INTO audit_events(actor_type,actor_id,event_type,details) VALUES($1,$2,$3,$4)', [
+          'admin',
+          req.auth.id,
+          'qualification.executed',
+          JSON.stringify({ sourceRound, qualifiedCount, limit: qualifiedCount, manualOverride: true }),
+        ]);
+      } else {
+        await client.query(
+          "UPDATE audit_events SET created_at=NOW(), details = jsonb_set(details, '{qualifiedCount}', to_jsonb($1::int)) WHERE id=$2",
+          [qualifiedCount, execCheck.rows[0].id],
+        );
+      }
+    });
+
+    res.json({
+      success: true,
+      participantId,
+      targetRound,
+      qualified,
+      message: qualified
+        ? `Participant manually qualified for Round ${targetRound}.`
+        : `Participant qualification revoked for Round ${targetRound}.`,
+    });
   } catch (error) {
     next(error);
   }
@@ -1591,6 +1862,10 @@ router.get('/admin/overview-stats', requireAuth('admin'), async (_req, res, next
         message = `Tournament state updated by admin`;
       } else if (row.event_type === 'round.reset') {
         message = `Round ${row.details?.roundId} reset by administrator`;
+      } else if (row.event_type === 'competition.broadcast') {
+        message = `📢 Broadcast [${row.details?.priority || 'INFO'}]: "${row.details?.message || ''}"`;
+      } else if (row.event_type === 'competition.broadcast_cleared') {
+        message = `Broadcast cleared by administrator`;
       } else if (row.event_type === 'proctor.tab_switch') {
         message = `âš ï¸ PROCTOR ALERT: ${row.full_name || 'Candidate'} switched tabs or lost focus (Warning #${row.details?.warningCount ?? 1})`;
       } else if (row.event_type === 'proctor.autosubmit_violation') {

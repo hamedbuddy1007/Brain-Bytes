@@ -7883,6 +7883,139 @@
     padding: 14px 18px;
     font-size: 0.95rem;
   }
+
+  /* Broadcast Notification Popup on Mobile */
+  .broadcast-notice-container {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .broadcast-flashing-card {
+    padding: 14px 14px;
+  }
+
+  /* Admin Security Gate on Mobile */
+  .admin-gate-page {
+    padding: 14px;
+  }
+
+  .admin-gate-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .gate-title {
+    font-size: 1.35rem;
+  }
+
+  .gate-actions-row {
+    flex-direction: column-reverse;
+  }
+
+  /* Registration Waiting & Approved Cards on Mobile */
+  .reg-grid-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .waiting-card,
+  .approved-card {
+    padding: 26px 18px;
+  }
+
+  .code-display-value {
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    word-break: break-all;
+  }
+
+  /* Rules, Prizes & Projector Views on Mobile/Tablet */
+  .rules-glass-panel {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .rules-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rules-grid-layout,
+  .rules-grid,
+  .prizes-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .projector-header {
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .projector-controls {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .projector-container {
+    padding: 18px 12px;
+    gap: 20px;
+  }
+
+  .projector-table-card {
+    padding: 16px 12px;
+  }
+
+  /* Dedicated Round Fallback & Rapid Fire Cards on Mobile */
+  .round-page-header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .round-header-left,
+  .round-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .round-content-body {
+    padding: 20px 12px 40px;
+  }
+
+  .mcq-question-card,
+  .graph-case-card,
+  .rapid-question-card,
+  .round-result-card {
+    padding: 20px 14px;
+  }
+
+  .rapid-question-prompt {
+    font-size: 1.12rem;
+    margin-bottom: 20px;
+  }
+
+  .btn-stage-buzzer {
+    width: 100%;
+    padding: 18px 24px;
+    font-size: 1.1rem;
+  }
+
+  .mcq-submit-footer,
+  .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 }
 
 /* --------------------------------------------------------------------------

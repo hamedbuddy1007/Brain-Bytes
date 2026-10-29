@@ -931,6 +931,103 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
               </div>
             </div>
 
+            {/* Live Round 2 Qualification Status Banner */}
+            {(() => {
+              const r2Qual = participant?.qualifications?.round2;
+              if (r2Qual?.status === 'QUALIFIED') {
+                return (
+                  <div
+                    style={{
+                      margin: '16px 0',
+                      padding: '16px 20px',
+                      borderRadius: '14px',
+                      background: 'rgba(16, 185, 129, 0.14)',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ color: '#10B981', display: 'flex' }}>
+                        <Icon name="trophy" size={24} />
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.95rem' }}>
+                          CONGRATULATIONS! YOU HAVE QUALIFIED FOR ROUND 2!
+                        </div>
+                        <div style={{ color: '#A7F3D0', fontSize: '0.82rem', marginTop: '2px' }}>
+                          You have been officially selected to advance to Round 2 (Graph Challenge)
+                          {r2Qual.rank ? ` • Qualifier Rank #${r2Qual.rank}` : ''}.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              if (r2Qual?.status === 'NOT_QUALIFIED') {
+                return (
+                  <div
+                    style={{
+                      margin: '16px 0',
+                      padding: '16px 20px',
+                      borderRadius: '14px',
+                      background: 'rgba(239, 68, 68, 0.14)',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ color: '#F87171', display: 'flex' }}>
+                        <Icon name="x-circle" size={24} />
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ color: '#FCA5A5', fontWeight: 800, fontSize: '0.95rem' }}>
+                          OFFICIAL RESULT: NOT SELECTED FOR ROUND 2
+                        </div>
+                        <div style={{ color: '#FECACA', fontSize: '0.82rem', marginTop: '2px' }}>
+                          Only the top {r2Qual.qualifiedCount > 0 ? `${r2Qual.qualifiedCount} ` : ''}candidates from Round 1 progressed to Round 2. Thank you for competing!
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div
+                  style={{
+                    margin: '16px 0',
+                    padding: '15px 20px',
+                    borderRadius: '14px',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ color: '#FBBF24', display: 'flex', flexShrink: 0 }}>
+                    <Icon name="clock" size={22} />
+                  </div>
+                  <div>
+                    <div style={{ color: '#FDE68A', fontWeight: 800, fontSize: '0.9rem' }}>
+                      AWAITING ROUND 2 QUALIFICATION RESULTS
+                    </div>
+                    <div style={{ color: '#FCD34D', fontSize: '0.8rem', marginTop: '2px' }}>
+                      Your Round 1 submission is locked in. You will automatically receive a pop-up notification on this screen as soon as the administrator publishes Round 2 qualifiers.
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <h3 style={{ margin: '12px 0 4px', fontSize: '1rem', color: '#E0E0E0' }}>
               Performance Diagnostic Log:
             </h3>
@@ -997,9 +1094,21 @@ export const Round1MCQ: React.FC<Round1MCQProps> = ({
                   className="btn-save-next-prominent"
                   onClick={onProceedToNextRound}
                   id="btn-proceed-round-2"
-                  style={{ background: '#8E233B', borderColor: '#8E233B' }}
+                  style={
+                    participant?.qualifications?.round2?.status === 'QUALIFIED'
+                      ? { background: '#059669', borderColor: '#10B981' }
+                      : participant?.qualifications?.round2?.status === 'NOT_QUALIFIED'
+                        ? { background: '#7F1D1D', borderColor: '#EF4444' }
+                        : { background: '#8E233B', borderColor: '#8E233B' }
+                  }
                 >
-                  <span>Proceed to Round 2 (Graph Challenge)</span>
+                  <span>
+                    {participant?.qualifications?.round2?.status === 'QUALIFIED'
+                      ? 'Proceed to Round 2 (Graph Challenge)'
+                      : participant?.qualifications?.round2?.status === 'NOT_QUALIFIED'
+                        ? 'View Round 2 Qualification Result'
+                        : 'Check Round 2 Qualification Status'}
+                  </span>
                   <Icon name="arrow-right" size={18} />
                 </button>
               )}

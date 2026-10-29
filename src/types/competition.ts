@@ -2,6 +2,31 @@ export type RoundStatus = 'locked' | 'active' | 'completed';
 
 export type RoundStateMap = Record<number, RoundStatus>;
 
+export type QualificationDecisionStatus = 'QUALIFIED' | 'NOT_QUALIFIED' | 'AWAITING_DECISION' | 'NOT_SUBMITTED';
+
+export interface RoundQualificationInfo {
+  sourceRound: number;
+  targetRound: number;
+  qualificationExecuted: boolean;
+  executedAt: string | null;
+  qualifiedCount: number;
+  sourceSubmitted: boolean;
+  isQualified: boolean;
+  status: QualificationDecisionStatus;
+  rank: number | null;
+  score: number | null;
+}
+
+export type BroadcastPriority = 'INFO' | 'WARNING' | 'URGENT' | 'QUALIFICATION';
+
+export interface BroadcastHistoryItem {
+  id: number;
+  message: string;
+  title?: string | null;
+  priority: BroadcastPriority;
+  createdAt: string;
+}
+
 export interface Participant {
   id?: number;
   fullName: string;
@@ -28,6 +53,10 @@ export interface Participant {
     unansweredCount: number | null;
     timeTakenSeconds: number | null;
   }>;
+  qualifications?: {
+    round2?: RoundQualificationInfo;
+    round3?: RoundQualificationInfo;
+  };
 }
 
 export interface CompetitionRound {
@@ -128,7 +157,7 @@ export interface AdminLeaderboardEntry {
 
 export interface ParticipantRoundDetail {
   roundId: number;
-  status: 'COMPLETED' | 'IN_PROGRESS' | 'ELIGIBLE' | 'READY' | 'LOCKED';
+  status: 'COMPLETED' | 'IN_PROGRESS' | 'ELIGIBLE' | 'READY' | 'LOCKED' | 'NOT_QUALIFIED';
   submitted: boolean;
   started: boolean;
   eligible?: boolean;
