@@ -28,7 +28,7 @@ async function setup() {
 }
 
 async function teardown() {
-  await getPool().end().catch(() => {});
+  await getPool().end().catch(() => { });
   if (server) {
     await new Promise((resolve) => server.close(resolve));
   }
