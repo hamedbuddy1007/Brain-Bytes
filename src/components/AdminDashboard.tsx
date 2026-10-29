@@ -229,64 +229,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* 1. LEFT SIDEBAR (DESKTOP & QUICK NAVIGATION) */}
-      <aside className="admin-sidebar">
-        <div className="sidebar-top">
-          {/* Brand Header */}
-          <div className="sidebar-brand-block">
-            <div className="sidebar-brand-icon">
-              <Icon name="shield" size={18} />
-            </div>
-            <div>
-              <div className="sidebar-brand-title">BRAIN BYTES</div>
-              <div className="sidebar-brand-sub">Admin Control Center</div>
-            </div>
-          </div>
-
-          {/* Essential Navigation Items */}
-          <nav className="sidebar-nav-menu" aria-label="Admin Navigation">
-            {ADMIN_NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`sidebar-nav-item ${activeTab === item.id ? 'is-active' : ''}`}
-                onClick={() => handleSelectTab(item.id)}
-              >
-                <Icon name={item.icon} size={16} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Bottom Sidebar: Settings & Sign Out */}
-        <div className="sidebar-bottom">
-          <button
-            type="button"
-            className={`sidebar-nav-item ${activeTab === 'settings' ? 'is-active' : ''}`}
-            onClick={() => handleSelectTab('settings')}
-          >
-            <Icon name="settings" size={16} />
-            <span>Settings</span>
-          </button>
-
-          <button
-            type="button"
-            className="sidebar-nav-item sidebar-sign-out"
-            onClick={handleSignOutClick}
-          >
-            <Icon name="log-out" size={16} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* 2. MAIN CANVAS */}
+      {/* MAIN CANVAS (All Controls Accessed Exclusively via Burger Menu) */}
       <main className="admin-main-canvas">
-        {/* Top Bar with Always-Visible Burger Menu Button, Settings & Sign Out */}
+        {/* Header with Burger Menu Button, Brand & Live Status Info */}
         <header className="admin-top-bar">
           <div className="admin-top-left">
-            {/* Prominent Burger Menu Button - Always visible in mobile, tablet & desktop view */}
+            {/* Prominent Burger Menu Button */}
             <button
               type="button"
               className={`admin-burger-menu-btn ${isBurgerMenuOpen ? 'is-open' : ''}`}
@@ -331,84 +279,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="round-indicator-label">Current:</span>
               <span className="round-indicator-value">{currentRoundLabel}</span>
             </div>
-
-            {/* Broadcast Shortcut */}
-            <button
-              type="button"
-              className="btn-projector-shortcut"
-              onClick={() => handleSelectTab('broadcasts')}
-              aria-label="Open Broadcast Console"
-              style={
-                activeTab === 'broadcasts'
-                  ? { background: '#FFF7ED', borderColor: '#F97316', color: '#EA580C' }
-                  : undefined
-              }
-            >
-              <Icon name="bell" size={15} />
-              <span className="top-btn-text">Announcements</span>
-            </button>
-
-            {/* Projector Shortcut */}
-            <button
-              type="button"
-              className="btn-projector-shortcut"
-              onClick={onOpenProjector}
-              aria-label="Open Projector Display"
-            >
-              <Icon name="monitor" size={15} />
-              <span className="top-btn-text">Projector</span>
-            </button>
-
-            {/* Direct Settings Button in Top Bar (Always accessible on Mobile/Desktop View) */}
-            <button
-              type="button"
-              className={`btn-top-admin-settings ${activeTab === 'settings' ? 'is-active' : ''}`}
-              onClick={() => handleSelectTab('settings')}
-              aria-label="Admin Settings"
-              title="Admin Settings"
-            >
-              <Icon name="settings" size={15} />
-              <span>Settings</span>
-            </button>
-
-            {/* Direct Sign Out Button in Top Bar (Always accessible on Mobile/Desktop View) */}
-            <button
-              type="button"
-              className="btn-top-admin-signout"
-              onClick={handleSignOutClick}
-              aria-label="Sign Out of Admin Console"
-              title="Sign Out"
-            >
-              <Icon name="log-out" size={15} />
-              <span>Sign Out</span>
-            </button>
           </div>
         </header>
-
-        {/* Quick Mobile/Tablet Active Section Strip */}
-        <div className="admin-mobile-quick-strip">
-          <button
-            type="button"
-            className="mobile-strip-menu-trigger"
-            onClick={() => setIsBurgerMenuOpen(true)}
-          >
-            <Icon name="menu" size={16} />
-            <span>All Controls ({ADMIN_NAV_ITEMS.length})</span>
-          </button>
-          <div className="mobile-strip-tabs-scroll">
-            {ADMIN_NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`mobile-strip-tab-chip ${activeTab === item.id ? 'is-active' : ''}`}
-                onClick={() => handleSelectTab(item.id)}
-              >
-                <Icon name={item.icon} size={14} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Tab Content Display */}
         {activeTab === 'overview' && (

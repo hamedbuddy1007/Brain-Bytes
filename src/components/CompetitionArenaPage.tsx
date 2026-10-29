@@ -139,6 +139,22 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
   const nextStageQual: RoundQualificationInfo | undefined =
     activeRoundMeta.id === 1 ? r2Qual : activeRoundMeta.id === 2 ? r3Qual : undefined;
 
+  const [announcementCount, setAnnouncementCount] = useState<{ total: number; unread: number }>({
+    total: 0,
+    unread: 0,
+  });
+
+  useEffect(() => {
+    const handleCountUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<{ total: number; unread: number }>).detail;
+      if (detail) {
+        setAnnouncementCount(detail);
+      }
+    };
+    window.addEventListener('bb:announcement-count-updated', handleCountUpdate);
+    return () => window.removeEventListener('bb:announcement-count-updated', handleCountUpdate);
+  }, []);
+
   return (
     <main className="arena-cockpit-root" id="arena-game-page">
       {/* Top Glass Navigation for Arena */}
@@ -175,7 +191,51 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
             </button>
           </div>
 
-          <div className="arena-header-right">
+          <div className="arena-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('bb:open-announcement-centre'))}
+              id="btn-arena-announcement-centre"
+              title="Open Participant Announcement Centre"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '999px',
+                border: announcementCount.unread > 0
+                  ? '1.5px solid #FB7185'
+                  : '1px solid rgba(15, 23, 42, 0.14)',
+                background: announcementCount.unread > 0
+                  ? 'linear-gradient(135deg, #8E233B 0%, #E11D48 100%)'
+                  : '#FFFFFF',
+                color: announcementCount.unread > 0 ? '#FFFFFF' : '#0F172A',
+                fontSize: '12.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: announcementCount.unread > 0
+                  ? '0 6px 16px rgba(225, 29, 72, 0.3)'
+                  : '0 2px 6px rgba(15, 23, 42, 0.06)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Icon name="bell" size={15} />
+              <span>Announcement Centre</span>
+              {announcementCount.total > 0 && (
+                <span
+                  style={{
+                    padding: '1px 7px',
+                    borderRadius: '999px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    background: announcementCount.unread > 0 ? '#FFFFFF' : '#F1F5F9',
+                    color: announcementCount.unread > 0 ? '#9F1239' : '#475569',
+                  }}
+                >
+                  {announcementCount.unread > 0 ? `${announcementCount.unread} NEW` : announcementCount.total}
+                </span>
+              )}
+            </button>
             {activeParticipant ? (
               <div className="arena-user-cluster">
                 <div className="arena-candidate-badge" id="arena-candidate-chip">

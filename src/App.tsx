@@ -754,8 +754,8 @@ export function App() {
         />
       )}
 
-      {/* LIVE PROCTOR BROADCAST NOTIFICATION POPUP (Bottom-Right with X mark & flashing glow) */}
-      <BroadcastNotification />
+      {/* LIVE PROCTOR BROADCAST NOTIFICATION POPUP (5s auto-hide + Participant Announcement Centre) */}
+      <BroadcastNotification currentView={effectiveView} />
     </div>
   );
 }

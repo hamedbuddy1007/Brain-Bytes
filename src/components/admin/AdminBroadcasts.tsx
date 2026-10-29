@@ -68,7 +68,7 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
     label: '5 Minutes Left',
     title: '5 Minutes Remaining in Current Stage',
     priority: 'WARNING',
-    message: 'Attention candidates: 5 minutes remaining in the current competition round. Ensure all your selected answers are saved.',
+    message: 'Attention participants: 5 minutes remaining in the current competition round. Ensure all your selected answers are saved.',
     icon: 'clock',
   },
   {
@@ -84,44 +84,76 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
     label: 'Standby Notice',
     title: 'Proctor Standby Instruction',
     priority: 'WARNING',
-    message: 'Please remain seated at your assigned terminal and do not refresh or switch browser tabs while scores and qualifications are verified.',
+    message: 'Please remain seated and do not refresh or switch browser tabs while scores and round qualifications are verified.',
     icon: 'bell',
   },
 ];
 
 const PRIORITY_META: Record<
   BroadcastPriority,
-  { label: string; color: string; bg: string; border: string; desc: string }
+  {
+    label: string;
+    defaultSubject: string;
+    color: string;
+    bg: string;
+    border: string;
+    glow: string;
+    desc: string;
+  }
 > = {
   INFO: {
     label: 'OFFICIAL BROADCAST',
-    color: '#EA580C',
-    bg: '#FFF7ED',
-    border: '#FDBA74',
+    defaultSubject: 'Official Tournament Announcement',
+    color: '#F43F5E',
+    bg: 'rgba(142, 35, 59, 0.25)',
+    border: 'rgba(244, 63, 94, 0.45)',
+    glow: 'rgba(142, 35, 59, 0.35)',
     desc: 'Standard arena announcement',
   },
   QUALIFICATION: {
     label: 'QUALIFICATION NOTICE',
-    color: '#059669',
-    bg: '#ECFDF5',
-    border: '#6EE7B7',
+    defaultSubject: 'Official Qualification Update',
+    color: '#34D399',
+    bg: 'rgba(16, 185, 129, 0.16)',
+    border: 'rgba(52, 211, 153, 0.45)',
+    glow: 'rgba(16, 185, 129, 0.28)',
     desc: 'Round selection & progression alert',
   },
   WARNING: {
     label: 'IMPORTANT WARNING',
-    color: '#D97706',
-    bg: '#FFFBEB',
-    border: '#FCD34D',
+    defaultSubject: 'Important Proctor Notice',
+    color: '#FBBF24',
+    bg: 'rgba(245, 158, 11, 0.16)',
+    border: 'rgba(251, 191, 36, 0.45)',
+    glow: 'rgba(245, 158, 11, 0.28)',
     desc: 'Time reminders & proctor instructions',
   },
   URGENT: {
     label: 'URGENT ALERT',
-    color: '#DC2626',
-    bg: '#FEF2F2',
-    border: '#FCA5A5',
+    defaultSubject: 'Urgent Tournament Alert',
+    color: '#F87171',
+    bg: 'rgba(239, 68, 68, 0.2)',
+    border: 'rgba(248, 113, 113, 0.5)',
+    glow: 'rgba(239, 68, 68, 0.32)',
     desc: 'Critical high-priority flash alert',
   },
 };
+
+export function formatBroadcastTimeAmPm(ts?: string | number | Date | null): string {
+  const dateObj = ts ? new Date(ts) : new Date();
+  if (Number.isNaN(dateObj.getTime())) {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+  return dateObj.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
 
 export const AdminBroadcasts: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -161,12 +193,13 @@ export const AdminBroadcasts: React.FC = () => {
     overrideTitle?: string | null,
     overridePriority?: BroadcastPriority,
   ) => {
-    const msgToSend = (overrideMsg !== undefined ? overrideMsg : message).trim();
-    const titleToSend = (overrideTitle !== undefined ? overrideTitle || '' : title).trim();
     const priorityToSend = overridePriority || priority;
+    const msgToSend = (overrideMsg !== undefined ? overrideMsg : message).trim();
+    const rawTitle = (overrideTitle !== undefined ? overrideTitle || '' : title).trim();
+    const titleToSend = rawTitle || PRIORITY_META[priorityToSend].defaultSubject;
 
     if (!msgToSend) {
-      showToast('Please enter an announcement message to broadcast.', 'error');
+      showToast('Please enter an announcement message to share.', 'error');
       return;
     }
 
@@ -176,7 +209,7 @@ export const AdminBroadcasts: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           message: msgToSend,
-          title: titleToSend || null,
+          title: titleToSend,
           priority: priorityToSend,
         }),
       });
@@ -185,9 +218,9 @@ export const AdminBroadcasts: React.FC = () => {
         setTitle('');
       }
       await fetchBroadcastData();
-      showToast('Announcement broadcasted live to all participant terminals!');
+      showToast('Announcement shared to all active participants! (5s pop-up + Announcement Centre)');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to broadcast announcement.', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to share announcement.', 'error');
     } finally {
       setIsSending(false);
     }
@@ -198,7 +231,7 @@ export const AdminBroadcasts: React.FC = () => {
     try {
       await apiRequest('/admin/broadcast', { method: 'DELETE' });
       await fetchBroadcastData();
-      showToast('Active broadcast cleared from all participant screens.');
+      showToast('Active broadcast pop-up cleared.');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to clear active broadcast.', 'error');
     } finally {
@@ -207,13 +240,13 @@ export const AdminBroadcasts: React.FC = () => {
   };
 
   const handleClearHistory = async () => {
-    if (!window.confirm('Clear all past broadcast history logs?')) return;
+    if (!window.confirm('Clear all past broadcast history logs from the Announcement Centre?')) return;
     try {
       await apiRequest('/admin/broadcasts/history', { method: 'DELETE' });
       await fetchBroadcastData();
-      showToast('Broadcast history log cleared.');
+      showToast('Announcement history log cleared.');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to clear broadcast history.', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to clear announcement history.', 'error');
     }
   };
 
@@ -224,9 +257,10 @@ export const AdminBroadcasts: React.FC = () => {
   };
 
   const currentPriorityMeta = PRIORITY_META[priority] || PRIORITY_META.INFO;
+  const previewSubject = title.trim() || currentPriorityMeta.defaultSubject;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="overview-container" style={{ gap: '20px' }}>
       {/* Toast Notification */}
       {toast && (
         <div
@@ -235,12 +269,13 @@ export const AdminBroadcasts: React.FC = () => {
             bottom: '24px',
             right: '24px',
             zIndex: 9999,
-            background: toast.type === 'error' ? '#FEF2F2' : '#ECFDF5',
-            border: `1px solid ${toast.type === 'error' ? '#FCA5A5' : '#6EE7B7'}`,
-            color: toast.type === 'error' ? '#991B1B' : '#065F46',
+            background: toast.type === 'error' ? 'rgba(127, 29, 29, 0.95)' : 'rgba(6, 78, 59, 0.95)',
+            border: `1px solid ${toast.type === 'error' ? 'rgba(248, 113, 113, 0.5)' : 'rgba(52, 211, 153, 0.5)'}`,
+            color: '#FFFFFF',
             padding: '14px 20px',
             borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.12)',
+            boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
@@ -255,39 +290,72 @@ export const AdminBroadcasts: React.FC = () => {
 
       {/* 1. LIVE ACTIVE BROADCAST STATUS BANNER */}
       <div
-        className=" stitch-card"
         style={{
           padding: '22px 26px',
-          background: activeBroadcast
-            ? 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%)'
-            : '#FFFFFF',
-          border: activeBroadcast ? '2px solid #FB923C' : '1px solid #E2E8F0',
           borderRadius: '16px',
+          background: activeBroadcast
+            ? 'linear-gradient(135deg, rgba(20, 24, 38, 0.9) 0%, rgba(142, 35, 59, 0.22) 100%)'
+            : 'var(--admin-bg-panel, rgba(20, 24, 38, 0.72))',
+          border: activeBroadcast
+            ? `1.5px solid ${PRIORITY_META[activeBroadcast.priority || 'INFO']?.border || 'rgba(244, 63, 94, 0.45)'}`
+            : '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+          boxShadow: activeBroadcast
+            ? `0 12px 32px ${PRIORITY_META[activeBroadcast.priority || 'INFO']?.glow || 'rgba(142, 35, 59, 0.25)'}`
+            : '0 8px 32px rgba(0, 0, 0, 0.24)',
+          backdropFilter: 'blur(16px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '18px',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 'min(100%, 240px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flex: 1, minWidth: '260px' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '14px',
+              background: activeBroadcast
+                ? PRIORITY_META[activeBroadcast.priority || 'INFO']?.bg || 'rgba(142, 35, 59, 0.25)'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: activeBroadcast
+                ? `1px solid ${PRIORITY_META[activeBroadcast.priority || 'INFO']?.border || 'rgba(244, 63, 94, 0.4)'}`
+                : '1px solid rgba(255, 255, 255, 0.1)',
+              color: activeBroadcast
+                ? PRIORITY_META[activeBroadcast.priority || 'INFO']?.color || '#F43F5E'
+                : 'var(--admin-text-dim, #94A3B8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="bell" size={22} />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
               <span
                 style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  background: activeBroadcast
+                    ? PRIORITY_META[activeBroadcast.priority || 'INFO']?.bg
+                    : 'rgba(255, 255, 255, 0.06)',
+                  border: activeBroadcast
+                    ? `1px solid ${PRIORITY_META[activeBroadcast.priority || 'INFO']?.border}`
+                    : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: activeBroadcast
+                    ? PRIORITY_META[activeBroadcast.priority || 'INFO']?.color
+                    : 'var(--admin-text-muted, #CBD5E1)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '4px 12px',
-                  borderRadius: '999px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  letterSpacing: '0.08em',
-                  background: activeBroadcast ? '#EA580C' : '#F1F5F9',
-                  color: activeBroadcast ? '#FFFFFF' : '#64748B',
                 }}
               >
                 <span
@@ -295,170 +363,143 @@ export const AdminBroadcasts: React.FC = () => {
                     width: '7px',
                     height: '7px',
                     borderRadius: '50%',
-                    background: activeBroadcast ? '#FFFFFF' : '#94A3B8',
+                    background: activeBroadcast
+                      ? PRIORITY_META[activeBroadcast.priority || 'INFO']?.color
+                      : '#64748B',
+                    boxShadow: activeBroadcast
+                      ? `0 0 8px ${PRIORITY_META[activeBroadcast.priority || 'INFO']?.color}`
+                      : 'none',
                   }}
                 />
-                {activeBroadcast ? 'LIVE ON ALL TERMINALS' : 'NO ACTIVE BROADCAST'}
+                {activeBroadcast
+                  ? `${PRIORITY_META[activeBroadcast.priority || 'INFO']?.label} • SHARED TO ALL ACTIVE PARTICIPANTS`
+                  : 'NO ACTIVE POP-UP BROADCAST'}
               </span>
 
-              {activeBroadcast && (
+              {activeBroadcast?.timestamp && (
                 <span
                   style={{
-                    padding: '3px 10px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    background: (PRIORITY_META[activeBroadcast.priority] || PRIORITY_META.INFO).bg,
-                    color: (PRIORITY_META[activeBroadcast.priority] || PRIORITY_META.INFO).color,
-                    border: `1px solid ${(PRIORITY_META[activeBroadcast.priority] || PRIORITY_META.INFO).border}`,
+                    fontSize: '12px',
+                    color: 'var(--admin-text-muted, #CBD5E1)',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 600,
                   }}
                 >
-                  {(PRIORITY_META[activeBroadcast.priority] || PRIORITY_META.INFO).label}
-                </span>
-              )}
-
-              {activeBroadcast?.timestamp && (
-                <span style={{ fontSize: '12px', color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
-                  Sent at {new Date(activeBroadcast.timestamp).toLocaleTimeString()}
+                  Shared at {formatBroadcastTimeAmPm(activeBroadcast.timestamp)}
                 </span>
               )}
             </div>
 
             {activeBroadcast ? (
               <div>
-                {activeBroadcast.title && (
-                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>
-                    {activeBroadcast.title}
-                  </div>
-                )}
-                <p style={{ margin: 0, fontSize: '14.5px', color: '#1E293B', lineHeight: 1.55, fontWeight: 500 }}>
-                  "{activeBroadcast.message}"
-                </p>
+                <div
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: 800,
+                    color: 'var(--admin-text-main, #FFFFFF)',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {activeBroadcast.title || PRIORITY_META[activeBroadcast.priority || 'INFO']?.defaultSubject}
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: 'var(--admin-text-muted, #CBD5E1)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {activeBroadcast.message}
+                </div>
               </div>
             ) : (
-              <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>
-                No broadcast pop-up is currently displayed on participant screens. Compose a message or choose a quick template below to push an announcement to all connected stations.
-              </p>
+              <div style={{ fontSize: '13.5px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 500 }}>
+                No active pop-up is currently pinned. When you share an announcement, it pops up on all active participant windows for 5 seconds and remains stored in their Announcement Centre.
+              </div>
             )}
           </div>
-
-          {activeBroadcast && (
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                disabled={isSending}
-                onClick={() =>
-                  handleSendBroadcast(
-                    activeBroadcast.message,
-                    activeBroadcast.title,
-                    activeBroadcast.priority,
-                  )
-                }
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #F97316',
-                  background: '#FFFFFF',
-                  color: '#EA580C',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                }}
-                title="Re-send with a new timestamp so dismissed pop-ups flash again on all screens"
-              >
-                <Icon name="refresh" size={15} />
-                <span>Re-Flash on All Screens</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isClearing}
-                onClick={handleClearActiveBroadcast}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #FCA5A5',
-                  background: '#FEF2F2',
-                  color: '#DC2626',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                }}
-              >
-                <Icon name="x-circle" size={15} />
-                <span>{isClearing ? 'Clearing...' : 'Clear Active Broadcast'}</span>
-              </button>
-            </div>
-          )}
         </div>
+
+        {activeBroadcast && (
+          <button
+            type="button"
+            onClick={() => void handleClearActiveBroadcast()}
+            disabled={isClearing}
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(248, 113, 113, 0.4)',
+              color: '#FCA5A5',
+              padding: '10px 16px',
+              borderRadius: '10px',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              cursor: isClearing ? 'wait' : 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexShrink: 0,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Icon name="x" size={15} />
+            {isClearing ? 'Clearing...' : 'Clear Active Pop-up'}
+          </button>
+        )}
       </div>
 
-      {/* 2. MAIN COMPOSER & LIVE PREVIEW GRID */}
+      {/* 2. COMPOSER + QUICK TEMPLATES GRID */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
           gap: '20px',
+          alignItems: 'start',
         }}
       >
-        {/* Left: Broadcast Composer */}
+        {/* Left: Broadcast Composer & Live Preview */}
         <div
-          className="stitch-card"
           style={{
-            padding: 'clamp(16px, 3vw, 24px)',
-            background: '#FFFFFF',
-            border: '1px solid #E2E8F0',
+            padding: '24px',
             borderRadius: '16px',
+            background: 'var(--admin-bg-panel, rgba(20, 24, 38, 0.72))',
+            border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.24)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '18px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: '#FFF7ED',
-                color: '#EA580C',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name="bell" size={18} />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                Compose Official Announcement
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              <Icon name="award" size={18} style={{ color: 'var(--admin-maroon-highlight, #B94B68)' }} />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--admin-text-main, #FFFFFF)' }}>
+                Compose Arena Announcement
               </h3>
-              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748B' }}>
-                Pushes an instant flashing notification card to every connected participant terminal
-              </p>
             </div>
+            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 500 }}>
+              Pops up on all active participant windows for 5 seconds, then stays accessible in their Announcement Centre.
+            </p>
           </div>
 
-          {/* Priority / Category Selector */}
-          <div style={{ marginBottom: '16px' }}>
+          {/* Priority Level Selector */}
+          <div>
             <label
               style={{
                 display: 'block',
-                fontSize: '11.5px',
+                fontSize: '11px',
                 fontWeight: 800,
-                color: '#475569',
                 textTransform: 'uppercase',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.08em',
+                color: 'var(--admin-text-muted, #CBD5E1)',
                 marginBottom: '8px',
               }}
             >
-              Announcement Category / Priority
+              Announcement Priority
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '8px' }}>
-              {(['INFO', 'QUALIFICATION', 'WARNING', 'URGENT'] as BroadcastPriority[]).map((pKey) => {
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              {(Object.keys(PRIORITY_META) as BroadcastPriority[]).map((pKey) => {
                 const meta = PRIORITY_META[pKey];
                 const isSelected = priority === pKey;
                 return (
@@ -469,17 +510,27 @@ export const AdminBroadcasts: React.FC = () => {
                     style={{
                       padding: '10px 12px',
                       borderRadius: '10px',
-                      border: isSelected ? `2px solid ${meta.color}` : '1px solid #E2E8F0',
-                      background: isSelected ? meta.bg : '#F8FAFC',
-                      textAlign: 'left',
+                      border: isSelected
+                        ? `1.5px solid ${meta.color}`
+                        : '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+                      background: isSelected ? meta.bg : 'var(--admin-bg-inset, rgba(12, 15, 24, 0.6))',
                       cursor: 'pointer',
+                      textAlign: 'left',
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: meta.color }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: isSelected ? meta.color : 'var(--admin-text-main, #FFFFFF)',
+                        letterSpacing: '0.06em',
+                        marginBottom: '2px',
+                      }}
+                    >
                       {meta.label}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 500 }}>
                       {meta.desc}
                     </div>
                   </button>
@@ -488,37 +539,39 @@ export const AdminBroadcasts: React.FC = () => {
             </div>
           </div>
 
-          {/* Optional Headline Input */}
-          <div style={{ marginBottom: '14px' }}>
-            <label
-              htmlFor="broadcast-title-input"
-              style={{
-                display: 'block',
-                fontSize: '11.5px',
-                fontWeight: 800,
-                color: '#475569',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                marginBottom: '6px',
-              }}
-            >
-              Headline / Subject (Optional)
-            </label>
+          {/* Subject Line Input */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--admin-text-muted, #CBD5E1)',
+                }}
+              >
+                Subject Line *
+              </label>
+              <span style={{ fontSize: '11px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 600 }}>
+                {title.length}/100
+              </span>
+            </div>
             <input
-              id="broadcast-title-input"
               type="text"
-              maxLength={120}
-              placeholder="e.g., Round 2 Qualifiers Published / 5 Minutes Remaining"
+              maxLength={100}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder={`e.g., ${currentPriorityMeta.defaultSubject}`}
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '11px 14px',
                 borderRadius: '10px',
-                border: '1px solid #CBD5E1',
+                border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.14))',
+                background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.65))',
                 fontSize: '13.5px',
-                color: '#0F172A',
-                background: '#F8FAFC',
+                fontWeight: 600,
+                color: 'var(--admin-text-main, #FFFFFF)',
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
@@ -526,47 +579,46 @@ export const AdminBroadcasts: React.FC = () => {
           </div>
 
           {/* Message Body Input */}
-          <div style={{ marginBottom: '18px' }}>
+          <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <label
-                htmlFor="broadcast-message-input"
                 style={{
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: 800,
-                  color: '#475569',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
+                  letterSpacing: '0.08em',
+                  color: 'var(--admin-text-muted, #CBD5E1)',
                 }}
               >
-                Announcement Message <span style={{ color: '#DC2626' }}>*</span>
+                Announcement Message *
               </label>
               <span
                 style={{
-                  fontSize: '11.5px',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: message.length > 450 ? '#DC2626' : '#64748B',
+                  fontSize: '11px',
+                  color: message.length > 450 ? '#F87171' : 'var(--admin-text-dim, #94A3B8)',
+                  fontWeight: 600,
                 }}
               >
-                {message.length} / 500
+                {message.length}/500
               </span>
             </div>
             <textarea
-              id="broadcast-message-input"
               rows={4}
               maxLength={500}
-              placeholder="Type the announcement to display across all participant screens..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              placeholder="Write the official announcement message to display below the subject line for all active participants..."
               style={{
                 width: '100%',
                 padding: '12px 14px',
                 borderRadius: '10px',
-                border: '1px solid #CBD5E1',
-                fontSize: '14px',
-                color: '#0F172A',
-                background: '#F8FAFC',
-                resize: 'vertical',
+                border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.14))',
+                background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.65))',
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--admin-text-main, #FFFFFF)',
                 lineHeight: 1.5,
+                resize: 'vertical',
                 outline: 'none',
                 boxSizing: 'border-box',
                 fontFamily: 'inherit',
@@ -574,33 +626,105 @@ export const AdminBroadcasts: React.FC = () => {
             />
           </div>
 
+          {/* Live Participant Pop-up Preview */}
+          <div
+            style={{
+              padding: '14px 16px',
+              borderRadius: '12px',
+              background: 'rgba(10, 12, 20, 0.85)',
+              border: `1.5px solid ${currentPriorityMeta.border}`,
+              boxShadow: `0 8px 24px ${currentPriorityMeta.glow}`,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '8px',
+                gap: '8px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  color: currentPriorityMeta.color,
+                  textTransform: 'uppercase',
+                }}
+              >
+                LIVE PARTICIPANT POP-UP PREVIEW (5s WINDOW) • {currentPriorityMeta.label}
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#94A3B8',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {formatBroadcastTimeAmPm()}
+              </span>
+            </div>
+
+            {/* Subject Line */}
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                marginBottom: '6px',
+                paddingBottom: '6px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              Subject: {previewSubject}
+            </div>
+
+            {/* Message Below Subject Line */}
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: message.trim() ? '#E2E8F0' : '#64748B',
+                fontStyle: message.trim() ? 'normal' : 'italic',
+                lineHeight: 1.5,
+              }}
+            >
+              {message.trim() || 'Your announcement message will appear here below the subject line...'}
+            </div>
+          </div>
+
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <button
               type="button"
+              onClick={() => void handleSendBroadcast()}
               disabled={isSending || !message.trim()}
-              onClick={() => handleSendBroadcast()}
               style={{
                 flex: 1,
                 padding: '13px 20px',
                 borderRadius: '10px',
-                border: 'none',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 background: !message.trim()
-                  ? '#CBD5E1'
-                  : 'linear-gradient(135deg, #EA580C 0%, #F97316 100%)',
-                color: '#FFFFFF',
-                fontSize: '14px',
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'linear-gradient(135deg, var(--admin-maroon-primary, #8E233B), var(--admin-maroon-highlight, #B94B68))',
+                color: !message.trim() ? '#64748B' : '#FFFFFF',
+                fontSize: '13.5px',
                 fontWeight: 800,
-                cursor: !message.trim() ? 'not-allowed' : 'pointer',
+                cursor: isSending || !message.trim() ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: !message.trim() ? 'none' : '0 6px 16px rgba(234, 88, 12, 0.28)',
+                boxShadow: !message.trim() ? 'none' : '0 8px 24px rgba(142, 35, 59, 0.45)',
+                transition: 'all 0.2s ease',
               }}
             >
-              <Icon name="bell" size={17} />
-              <span>{isSending ? 'Broadcasting...' : 'Broadcast to All Terminals'}</span>
+              <Icon name="bell" size={16} />
+              {isSending ? 'Sharing Announcement...' : 'Share to All Active Participants'}
             </button>
 
             {(title || message) && (
@@ -613,9 +737,9 @@ export const AdminBroadcasts: React.FC = () => {
                 style={{
                   padding: '13px 16px',
                   borderRadius: '10px',
-                  border: '1px solid #CBD5E1',
-                  background: '#FFFFFF',
-                  color: '#475569',
+                  border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.14))',
+                  background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.6))',
+                  color: 'var(--admin-text-muted, #CBD5E1)',
                   fontSize: '13px',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -627,177 +751,67 @@ export const AdminBroadcasts: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Live Participant Screen Preview & Quick Templates */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Live Preview Card */}
-          <div
-            className="stitch-card"
-            style={{
-              padding: '20px 24px',
-              background: '#0F172A',
-              borderRadius: '16px',
-              color: '#FFFFFF',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                letterSpacing: '0.08em',
-                color: '#94A3B8',
-                textTransform: 'uppercase',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span>LIVE PARTICIPANT TERMINAL PREVIEW</span>
-              <span style={{ color: '#38BDF8' }}>Bottom-Right Pop-up</span>
+        {/* Right: Instant 1-Click Tournament Templates */}
+        <div
+          style={{
+            padding: '24px',
+            borderRadius: '16px',
+            background: 'var(--admin-bg-panel, rgba(20, 24, 38, 0.72))',
+            border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.24)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              <Icon name="zap" size={18} style={{ color: 'var(--admin-maroon-highlight, #B94B68)' }} />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--admin-text-main, #FFFFFF)' }}>
+                Quick-Fire Tournament Presets
+              </h3>
             </div>
-
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: '14px',
-                padding: '16px 18px',
-                border: `2px solid ${currentPriorityMeta.color}`,
-                color: '#0F172A',
-                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '8px',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '10.5px',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    background: currentPriorityMeta.bg,
-                    color: currentPriorityMeta.color,
-                  }}
-                >
-                  {currentPriorityMeta.label}
-                </span>
-                <span style={{ fontSize: '11px', color: '#94A3B8' }}>✕</span>
-              </div>
-
-              {title.trim() && (
-                <div style={{ fontWeight: 800, fontSize: '14px', color: '#0F172A', marginBottom: '4px' }}>
-                  {title}
-                </div>
-              )}
-
-              <div
-                style={{
-                  fontSize: '13.5px',
-                  color: message.trim() ? '#1E293B' : '#94A3B8',
-                  lineHeight: 1.5,
-                  fontStyle: message.trim() ? 'normal' : 'italic',
-                }}
-              >
-                {message.trim() || 'Your announcement message preview will appear here...'}
-              </div>
-
-              <div
-                style={{
-                  marginTop: '10px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid #F1F5F9',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '11px',
-                  color: '#64748B',
-                }}
-              >
-                <span>Event Administration • Proctors</span>
-                <span>Just now</span>
-              </div>
-            </div>
+            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 500 }}>
+              Load a preset into the editor or share it directly to all active participants in one click.
+            </p>
           </div>
 
-          {/* Quick Templates Grid */}
-          <div
-            className="stitch-card"
-            style={{
-              padding: '20px 24px',
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '16px',
-              flex: 1,
-            }}
-          >
-            <div style={{ marginBottom: '12px' }}>
-              <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 800, color: '#0F172A' }}>
-                Quick Tournament Templates
-              </h4>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748B' }}>
-                Click any preset to load it into the composer, or click "Send Now" for instant broadcast
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
-                gap: '10px',
-              }}
-            >
-              {QUICK_TEMPLATES.map((tpl) => {
-                const pMeta = PRIORITY_META[tpl.priority];
-                return (
-                  <div
-                    key={tpl.id}
-                    style={{
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '10px',
-                      padding: '10px 12px',
-                      background: '#F8FAFC',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '8px',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                        <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A' }}>
-                          {tpl.label}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '9.5px',
-                            fontWeight: 800,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: pMeta.bg,
-                            color: pMeta.color,
-                          }}
-                        >
-                          {tpl.priority}
-                        </span>
-                      </div>
-                      <p
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {QUICK_TEMPLATES.map((tpl) => {
+              const pMeta = PRIORITY_META[tpl.priority];
+              return (
+                <div
+                  key={tpl.id}
+                  style={{
+                    padding: '13px 15px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.1))',
+                    background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.6))',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span
                         style={{
-                          margin: '4px 0 0',
-                          fontSize: '11.5px',
-                          color: '#475569',
-                          lineHeight: 1.4,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: pMeta.bg,
+                          border: `1px solid ${pMeta.border}`,
+                          color: pMeta.color,
+                          letterSpacing: '0.06em',
                         }}
                       >
-                        {tpl.message}
-                      </p>
+                        {pMeta.label}
+                      </span>
+                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--admin-text-main, #FFFFFF)' }}>
+                        {tpl.title}
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -805,53 +819,61 @@ export const AdminBroadcasts: React.FC = () => {
                         type="button"
                         onClick={() => handleApplyTemplate(tpl)}
                         style={{
-                          flex: 1,
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #CBD5E1',
-                          background: '#FFFFFF',
-                          color: '#334155',
-                          fontSize: '11px',
+                          padding: '5px 10px',
+                          borderRadius: '7px',
+                          border: '1px solid rgba(255, 255, 255, 0.14)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--admin-text-muted, #CBD5E1)',
+                          fontSize: '11.5px',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
-                        Edit in Composer
+                        Edit
                       </button>
                       <button
                         type="button"
                         disabled={isSending}
-                        onClick={() => handleSendBroadcast(tpl.message, tpl.title, tpl.priority)}
+                        onClick={() => void handleSendBroadcast(tpl.message, tpl.title, tpl.priority)}
                         style={{
-                          padding: '5px 10px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: pMeta.color,
+                          padding: '5px 11px',
+                          borderRadius: '7px',
+                          border: `1px solid ${pMeta.border}`,
+                          background: pMeta.bg,
                           color: '#FFFFFF',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
+                          fontSize: '11.5px',
+                          fontWeight: 800,
+                          cursor: isSending ? 'wait' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
-                        Send Now
+                        <Icon name="bell" size={12} />
+                        Share Now
                       </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div style={{ fontSize: '12px', color: 'var(--admin-text-dim, #94A3B8)', lineHeight: 1.45 }}>
+                    {tpl.message}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* 3. BROADCAST HISTORY LOG */}
       <div
-        className="stitch-card"
         style={{
-          padding: '22px 26px',
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          padding: '24px',
           borderRadius: '16px',
+          background: 'var(--admin-bg-panel, rgba(20, 24, 38, 0.72))',
+          border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.12))',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.24)',
+          backdropFilter: 'blur(16px)',
         }}
       >
         <div
@@ -859,30 +881,30 @@ export const AdminBroadcasts: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '16px',
             flexWrap: 'wrap',
-            gap: '10px',
+            gap: '12px',
+            marginBottom: '16px',
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Broadcast History Log ({history.length})
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: 'var(--admin-text-main, #FFFFFF)' }}>
+              Announcement Centre History ({history.length})
             </h3>
-            <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
-              Complete audit log of all announcements transmitted during the tournament
+            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--admin-text-dim, #94A3B8)', fontWeight: 500 }}>
+              All announcements listed here are visible in the Participant Announcement Centre. You can re-share any item at any time.
             </p>
           </div>
 
           {history.length > 0 && (
             <button
               type="button"
-              onClick={handleClearHistory}
+              onClick={() => void handleClearHistory()}
               style={{
-                padding: '7px 14px',
+                padding: '8px 14px',
                 borderRadius: '8px',
-                border: '1px solid #CBD5E1',
-                background: '#F8FAFC',
-                color: '#475569',
+                border: '1px solid rgba(248, 113, 113, 0.35)',
+                background: 'rgba(239, 68, 68, 0.12)',
+                color: '#FCA5A5',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -898,107 +920,93 @@ export const AdminBroadcasts: React.FC = () => {
             style={{
               padding: '32px',
               textAlign: 'center',
-              background: '#F8FAFC',
+              color: 'var(--admin-text-dim, #94A3B8)',
+              background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.5))',
               borderRadius: '12px',
-              color: '#64748B',
+              border: '1px dashed rgba(255, 255, 255, 0.12)',
               fontSize: '13.5px',
+              fontWeight: 600,
             }}
           >
-            No broadcasts have been sent yet.
+            No announcements have been shared in this session yet.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {history.map((item) => {
-              const pMeta = PRIORITY_META[item.priority] || PRIORITY_META.INFO;
+              const pMeta = PRIORITY_META[item.priority || 'INFO'] || PRIORITY_META.INFO;
+              const subjectText = item.title || pMeta.defaultSubject;
               return (
                 <div
                   key={item.id}
                   style={{
+                    padding: '14px 18px',
+                    borderRadius: '12px',
+                    background: 'var(--admin-bg-inset, rgba(12, 15, 24, 0.6))',
+                    border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.1))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '14px',
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    gap: '16px',
                     flexWrap: 'wrap',
                   }}
                 >
                   <div style={{ flex: 1, minWidth: '240px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <span
                         style={{
                           fontSize: '10px',
                           fontWeight: 800,
                           padding: '2px 8px',
-                          borderRadius: '5px',
+                          borderRadius: '999px',
                           background: pMeta.bg,
-                          color: pMeta.color,
                           border: `1px solid ${pMeta.border}`,
+                          color: pMeta.color,
+                          letterSpacing: '0.06em',
                         }}
                       >
                         {pMeta.label}
                       </span>
+                      <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--admin-text-main, #FFFFFF)' }}>
+                        {subjectText}
+                      </span>
                       <span
                         style={{
                           fontSize: '11.5px',
-                          color: '#64748B',
-                          fontFamily: "'JetBrains Mono', monospace",
+                          color: 'var(--admin-text-dim, #94A3B8)',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 600,
                         }}
                       >
-                        {new Date(item.createdAt).toLocaleString()}
+                        {formatBroadcastTimeAmPm(item.createdAt)}
                       </span>
                     </div>
-                    {item.title && (
-                      <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#0F172A' }}>
-                        {item.title}
-                      </div>
-                    )}
-                    <div style={{ fontSize: '13px', color: '#334155', marginTop: '2px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--admin-text-muted, #CBD5E1)', fontWeight: 500, lineHeight: 1.5 }}>
                       {item.message}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTitle(item.title || '');
-                        setMessage(item.message);
-                        setPriority(item.priority || 'INFO');
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '7px',
-                        border: '1px solid #CBD5E1',
-                        background: '#FFFFFF',
-                        color: '#334155',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Load
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSending}
-                      onClick={() => handleSendBroadcast(item.message, item.title, item.priority)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '7px',
-                        border: '1px solid #F97316',
-                        background: '#FFF7ED',
-                        color: '#EA580C',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Re-Broadcast
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    disabled={isSending}
+                    onClick={() => void handleSendBroadcast(item.message, subjectText, item.priority || 'INFO')}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: isSending ? 'wait' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon name="refresh" size={13} />
+                    Share Again
+                  </button>
                 </div>
               );
             })}

@@ -645,28 +645,45 @@ router.post('/participants/proctor-event', requireAuth('participant'), async (re
 
 router.get('/competition/state', async (_req, res, next) => {
   try {
-    const result = await query(`
-      SELECT
-        status,
-        active_round,
-        registration_open,
-        round_states,
-        round_durations,
-        broadcast_message,
-        broadcast_timestamp,
-        updated_at,
-        (SELECT details FROM audit_events WHERE event_type = 'competition.broadcast' ORDER BY id DESC LIMIT 1) AS broadcast_meta
-      FROM competition_state
-      WHERE singleton=TRUE
-    `);
+    const [result, historyResult] = await Promise.all([
+      query(`
+        SELECT
+          status,
+          active_round,
+          registration_open,
+          round_states,
+          round_durations,
+          broadcast_message,
+          broadcast_timestamp,
+          updated_at,
+          (SELECT details FROM audit_events WHERE event_type = 'competition.broadcast' ORDER BY id DESC LIMIT 1) AS broadcast_meta
+        FROM competition_state
+        WHERE singleton=TRUE
+      `),
+      query(`
+        SELECT id, details, created_at
+        FROM audit_events
+        WHERE event_type = 'competition.broadcast'
+        ORDER BY id DESC
+        LIMIT 30
+      `),
+    ]);
     const row = result.rows[0] || {};
     const meta = row.broadcast_message ? (row.broadcast_meta || {}) : {};
+    const announcements = historyResult.rows.map((h) => ({
+      id: Number(h.id),
+      message: h.details?.message || '',
+      title: h.details?.title || null,
+      priority: h.details?.priority || 'INFO',
+      createdAt: h.details?.timestamp || h.created_at,
+    }));
     res.json({
       ...row,
       broadcastMessage: row.broadcast_message || null,
       broadcastTimestamp: row.broadcast_timestamp || null,
       broadcastTitle: meta.title || null,
       broadcastPriority: meta.priority || 'INFO',
+      announcements,
     });
   } catch (error) {
     next(error);
