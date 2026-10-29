@@ -53,8 +53,9 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
         position: 'fixed',
         inset: 0,
         zIndex: 10000,
-        backgroundColor: 'rgba(15, 23, 42, 0.78)',
-        backdropFilter: 'blur(8px)',
+        backgroundColor: 'rgba(9, 12, 20, 0.82)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -67,29 +68,40 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
     >
       <div
         style={{
-          background: '#FFFFFF',
+          background: 'linear-gradient(180deg, rgba(18, 22, 36, 0.98) 0%, rgba(12, 14, 24, 0.99) 100%)',
           borderRadius: '20px',
           maxWidth: '540px',
           width: '100%',
           maxHeight: '92dvh',
           overflowY: 'auto',
-          boxShadow: isQualified
-            ? '0 25px 60px -15px rgba(22, 163, 74, 0.35), 0 0 0 2px #86EFAC'
+          border: isQualified
+            ? '1.5px solid rgba(16, 185, 129, 0.5)'
             : isNotQualified
-              ? '0 25px 60px -15px rgba(220, 38, 38, 0.3), 0 0 0 2px #FCA5A5'
-              : '0 25px 60px -15px rgba(217, 119, 6, 0.25), 0 0 0 2px #FDE68A',
+              ? '1.5px solid rgba(239, 68, 68, 0.5)'
+              : '1.5px solid rgba(245, 158, 11, 0.5)',
+          boxShadow: isQualified
+            ? '0 25px 60px -12px rgba(16, 185, 129, 0.35), 0 0 0 1px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+            : isNotQualified
+              ? '0 25px 60px -12px rgba(239, 68, 68, 0.35), 0 0 0 1px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+              : '0 25px 60px -12px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
           fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+          color: '#FFFFFF',
         }}
       >
         {/* Top Accent Banner */}
         <div
           style={{
-            padding: 'clamp(20px, 4vw, 28px) clamp(16px, 4vw, 28px) 20px',
+            padding: 'clamp(20px, 4vw, 28px) clamp(16px, 4vw, 28px) 22px',
             background: isQualified
-              ? 'linear-gradient(135deg, #059669 0%, #10B981 55%, #047857 100%)'
+              ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.9) 0%, rgba(5, 150, 105, 0.78) 55%, rgba(4, 120, 87, 0.9) 100%)'
               : isNotQualified
-                ? 'linear-gradient(135deg, #991B1B 0%, #DC2626 55%, #7F1D1D 100%)'
-                : 'linear-gradient(135deg, #B45309 0%, #D97706 55%, #92400E 100%)',
+                ? 'linear-gradient(135deg, rgba(127, 29, 29, 0.92) 0%, rgba(185, 28, 28, 0.8) 55%, rgba(142, 35, 59, 0.92) 100%)'
+                : 'linear-gradient(135deg, rgba(120, 53, 15, 0.92) 0%, rgba(180, 83, 9, 0.8) 55%, rgba(146, 64, 14, 0.92) 100%)',
+            borderBottom: isQualified
+              ? '1px solid rgba(52, 211, 153, 0.35)'
+              : isNotQualified
+                ? '1px solid rgba(248, 113, 113, 0.35)'
+                : '1px solid rgba(251, 191, 36, 0.35)',
             color: '#FFFFFF',
             position: 'relative',
             textAlign: 'center',
@@ -103,13 +115,14 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
               gap: '6px',
               padding: '5px 14px',
               borderRadius: '999px',
-              background: 'rgba(255, 255, 255, 0.18)',
-              border: '1px solid rgba(255, 255, 255, 0.32)',
+              background: 'rgba(12, 14, 24, 0.45)',
+              border: '1px solid rgba(255, 255, 255, 0.28)',
               fontSize: '11px',
               fontWeight: 800,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               marginBottom: '16px',
+              color: isQualified ? '#A7F3D0' : isNotQualified ? '#FECACA' : '#FDE68A',
             }}
           >
             <Icon
@@ -131,13 +144,14 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
               width: '68px',
               height: '68px',
               borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '2px solid rgba(255, 255, 255, 0.45)',
+              background: 'rgba(12, 14, 24, 0.38)',
+              border: '2px solid rgba(255, 255, 255, 0.4)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 14px',
-              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+              color: isQualified ? '#34D399' : isNotQualified ? '#FCA5A5' : '#FBBF24',
             }}
           >
             <Icon
@@ -150,10 +164,11 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
             id="qualification-modal-title"
             style={{
               margin: '0 0 6px',
-              fontSize: '23px',
+              fontSize: '22px',
               fontWeight: 800,
               lineHeight: 1.25,
               letterSpacing: '-0.02em',
+              color: '#FFFFFF',
             }}
           >
             {isQualified
@@ -167,11 +182,11 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
             style={{
               margin: 0,
               fontSize: '13.5px',
-              opacity: 0.92,
-              fontWeight: 500,
+              color: '#E2E8F0',
+              fontWeight: 600,
             }}
           >
-            {participantName} • <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{rollNumber}</span>
+            {participantName} • <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#F8FAFC' }}>{rollNumber}</span>
           </p>
         </div>
 
@@ -188,8 +203,8 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
           >
             <div
               style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: '12px',
                 padding: '12px 14px',
                 textAlign: 'center',
@@ -199,7 +214,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                 style={{
                   fontSize: '10px',
                   fontWeight: 800,
-                  color: '#64748B',
+                  color: '#94A3B8',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   marginBottom: '4px',
@@ -211,7 +226,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                 style={{
                   fontSize: '20px',
                   fontWeight: 800,
-                  color: '#0F172A',
+                  color: '#FFFFFF',
                   fontFamily: "'JetBrains Mono', monospace",
                 }}
               >
@@ -222,8 +237,8 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
             {rank && (
               <div
                 style={{
-                  background: '#ECFDF5',
-                  border: '1px solid #A7F3D0',
+                  background: 'rgba(16, 185, 129, 0.14)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
                   borderRadius: '12px',
                   padding: '12px 14px',
                   textAlign: 'center',
@@ -233,7 +248,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   style={{
                     fontSize: '10px',
                     fontWeight: 800,
-                    color: '#047857',
+                    color: '#6EE7B7',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     marginBottom: '4px',
@@ -245,7 +260,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   style={{
                     fontSize: '20px',
                     fontWeight: 800,
-                    color: '#065F46',
+                    color: '#34D399',
                     fontFamily: "'JetBrains Mono', monospace",
                   }}
                 >
@@ -256,8 +271,18 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
 
             <div
               style={{
-                background: isQualified ? '#ECFDF5' : isNotQualified ? '#FEF2F2' : '#FFFBEB',
-                border: `1px solid ${isQualified ? '#A7F3D0' : isNotQualified ? '#FECACA' : '#FDE68A'}`,
+                background: isQualified
+                  ? 'rgba(16, 185, 129, 0.14)'
+                  : isNotQualified
+                    ? 'rgba(239, 68, 68, 0.14)'
+                    : 'rgba(245, 158, 11, 0.14)',
+                border: `1px solid ${
+                  isQualified
+                    ? 'rgba(16, 185, 129, 0.4)'
+                    : isNotQualified
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : 'rgba(245, 158, 11, 0.4)'
+                }`,
                 borderRadius: '12px',
                 padding: '12px 14px',
                 textAlign: 'center',
@@ -267,7 +292,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                 style={{
                   fontSize: '10px',
                   fontWeight: 800,
-                  color: isQualified ? '#047857' : isNotQualified ? '#B91C1C' : '#B45309',
+                  color: isQualified ? '#6EE7B7' : isNotQualified ? '#FCA5A5' : '#FDE68A',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   marginBottom: '4px',
@@ -279,7 +304,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                 style={{
                   fontSize: '14px',
                   fontWeight: 800,
-                  color: isQualified ? '#065F46' : isNotQualified ? '#991B1B' : '#92400E',
+                  color: isQualified ? '#34D399' : isNotQualified ? '#F87171' : '#FBBF24',
                   marginTop: '3px',
                 }}
               >
@@ -295,26 +320,36 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
           {/* Detailed Message Card */}
           <div
             style={{
-              background: isQualified ? '#F0FDF4' : isNotQualified ? '#FFF1F2' : '#FFFBEB',
-              border: `1px solid ${isQualified ? '#BBF7D0' : isNotQualified ? '#FECDD3' : '#FDE68A'}`,
+              background: isQualified
+                ? 'rgba(16, 185, 129, 0.1)'
+                : isNotQualified
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : 'rgba(245, 158, 11, 0.1)',
+              border: `1px solid ${
+                isQualified
+                  ? 'rgba(16, 185, 129, 0.35)'
+                  : isNotQualified
+                    ? 'rgba(239, 68, 68, 0.35)'
+                    : 'rgba(245, 158, 11, 0.35)'
+              }`,
               borderRadius: '14px',
               padding: '16px 18px',
               marginBottom: '22px',
-              color: '#1E293B',
+              color: '#F1F5F9',
               fontSize: '14px',
               lineHeight: 1.6,
             }}
           >
             {isQualified && (
               <>
-                <div style={{ fontWeight: 700, color: '#166534', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontWeight: 800, color: '#34D399', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon name="check-circle" size={17} />
                   <span>Unlocked Stage: {targetMeta.title}</span>
                 </div>
-                <p style={{ margin: 0, color: '#334155', fontSize: '13.5px' }}>
+                <p style={{ margin: 0, color: '#E2E8F0', fontSize: '13.5px' }}>
                   Based on your Round {sourceRound} performance, you have officially qualified among the top{' '}
-                  <strong>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}candidates</strong> to advance to{' '}
-                  <strong>Round {targetRound}</strong>.{' '}
+                  <strong style={{ color: '#FFFFFF' }}>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}candidates</strong> to advance to{' '}
+                  <strong style={{ color: '#FFFFFF' }}>Round {targetRound}</strong>.{' '}
                   {targetRoundStatus === 'active'
                     ? `Round ${targetRound} is currently LIVE — you may enter the stage immediately!`
                     : `Proceed to the Round ${targetRound} stage cockpit and stand by for the administrator to start the timer.`}
@@ -324,27 +359,27 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
 
             {isNotQualified && (
               <>
-                <div style={{ fontWeight: 700, color: '#991B1B', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontWeight: 800, color: '#FCA5A5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon name="alert-circle" size={17} />
                   <span>Elimination Cutoff Applied for Round {targetRound}</span>
                 </div>
-                <p style={{ margin: 0, color: '#334155', fontSize: '13.5px' }}>
-                  Thank you for competing in <strong>Round {sourceRound}</strong> of Data Mania: Brain Bytes. Only the top{' '}
-                  <strong>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}qualifying participants</strong> from Round {sourceRound} were selected to progress to{' '}
-                  <strong>Round {targetRound} ({targetMeta.title})</strong>. Your Round {sourceRound} score has been permanently recorded on the tournament leaderboard.
+                <p style={{ margin: 0, color: '#E2E8F0', fontSize: '13.5px' }}>
+                  Thank you for competing in <strong style={{ color: '#FFFFFF' }}>Round {sourceRound}</strong> of Data Mania: Brain Bytes. Only the top{' '}
+                  <strong style={{ color: '#FFFFFF' }}>{qualifiedCount > 0 ? `${qualifiedCount} ` : ''}qualifying participants</strong> from Round {sourceRound} were selected to progress to{' '}
+                  <strong style={{ color: '#FFFFFF' }}>Round {targetRound} ({targetMeta.title})</strong>. Your Round {sourceRound} score has been permanently recorded on the tournament leaderboard.
                 </p>
               </>
             )}
 
             {isAwaiting && (
               <>
-                <div style={{ fontWeight: 700, color: '#92400E', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontWeight: 800, color: '#FDE68A', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon name="clock" size={17} />
                   <span>Administrator Qualification Cutoff Pending</span>
                 </div>
-                <p style={{ margin: 0, color: '#334155', fontSize: '13.5px' }}>
-                  Your <strong>Round {sourceRound}</strong> submission is safely recorded. Progression to{' '}
-                  <strong>Round {targetRound}</strong> is restricted until the tournament administrator executes the official qualification cutoff. You will automatically see your selection result here as soon as it is published.
+                <p style={{ margin: 0, color: '#E2E8F0', fontSize: '13.5px' }}>
+                  Your <strong style={{ color: '#FFFFFF' }}>Round {sourceRound}</strong> submission is safely recorded. Progression to{' '}
+                  <strong style={{ color: '#FFFFFF' }}>Round {targetRound}</strong> is restricted until the tournament administrator executes the official qualification cutoff. You will automatically see your selection result here as soon as it is published.
                 </p>
               </>
             )}
@@ -360,9 +395,9 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   style={{
                     padding: '12px 18px',
                     borderRadius: '10px',
-                    border: '1px solid #CBD5E1',
-                    background: '#FFFFFF',
-                    color: '#475569',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: '#E2E8F0',
                     fontSize: '13.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -380,7 +415,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                     flex: 1,
                     padding: '12px 20px',
                     borderRadius: '10px',
-                    border: 'none',
+                    border: '1px solid rgba(52, 211, 153, 0.4)',
                     background: 'linear-gradient(135deg, #059669, #10B981)',
                     color: '#FFFFFF',
                     fontSize: '14px',
@@ -390,7 +425,7 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    boxShadow: '0 6px 16px rgba(16, 185, 129, 0.35)',
+                    boxShadow: '0 6px 18px rgba(16, 185, 129, 0.35)',
                   }}
                 >
                   <span>
@@ -409,10 +444,10 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   width: '100%',
                   padding: '13px 20px',
                   borderRadius: '10px',
-                  border: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                   background: isNotQualified
-                    ? 'linear-gradient(135deg, #1E293B, #0F172A)'
-                    : 'linear-gradient(135deg, #D97706, #B45309)',
+                    ? 'linear-gradient(135deg, #8E233B 0%, #B94B68 100%)'
+                    : 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
                   color: '#FFFFFF',
                   fontSize: '14px',
                   fontWeight: 800,
@@ -421,6 +456,9 @@ export const QualificationPopupModal: React.FC<QualificationPopupModalProps> = (
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
+                  boxShadow: isNotQualified
+                    ? '0 6px 18px rgba(142, 35, 59, 0.4)'
+                    : '0 6px 18px rgba(217, 119, 6, 0.35)',
                 }}
               >
                 <Icon name="check-circle" size={17} />

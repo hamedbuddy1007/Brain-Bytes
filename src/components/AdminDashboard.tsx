@@ -155,10 +155,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* All 9 Control Modules */}
+            {/* Main Admin Control Modules (Settings is in the footer row below) */}
             <div className="burger-drawer-section-label">ALL ADMIN CONTROLS</div>
             <nav className="burger-drawer-nav" aria-label="Admin Controls Drawer Navigation">
-              {ADMIN_NAV_ITEMS.map((item) => (
+              {ADMIN_NAV_ITEMS.filter((item) => item.id !== 'settings').map((item) => (
                 <button
                   key={item.id}
                   type="button"

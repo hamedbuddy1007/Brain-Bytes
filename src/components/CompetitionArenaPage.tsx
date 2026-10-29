@@ -205,17 +205,18 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 borderRadius: '999px',
                 border: announcementCount.unread > 0
                   ? '1.5px solid #FB7185'
-                  : '1px solid rgba(15, 23, 42, 0.14)',
+                  : '1px solid rgba(255, 255, 255, 0.18)',
                 background: announcementCount.unread > 0
                   ? 'linear-gradient(135deg, #8E233B 0%, #E11D48 100%)'
-                  : '#FFFFFF',
-                color: announcementCount.unread > 0 ? '#FFFFFF' : '#0F172A',
+                  : 'rgba(22, 25, 38, 0.85)',
+                color: '#FFFFFF',
                 fontSize: '12.5px',
                 fontWeight: 800,
                 cursor: 'pointer',
                 boxShadow: announcementCount.unread > 0
-                  ? '0 6px 16px rgba(225, 29, 72, 0.3)'
-                  : '0 2px 6px rgba(15, 23, 42, 0.06)',
+                  ? '0 6px 16px rgba(225, 29, 72, 0.35)'
+                  : '0 4px 12px rgba(0, 0, 0, 0.35)',
+                backdropFilter: 'blur(12px)',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -228,8 +229,8 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     borderRadius: '999px',
                     fontSize: '11px',
                     fontWeight: 800,
-                    background: announcementCount.unread > 0 ? '#FFFFFF' : '#F1F5F9',
-                    color: announcementCount.unread > 0 ? '#9F1239' : '#475569',
+                    background: announcementCount.unread > 0 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.14)',
+                    color: announcementCount.unread > 0 ? '#9F1239' : '#E2E8F0',
                   }}
                 >
                   {announcementCount.unread > 0 ? `${announcementCount.unread} NEW` : announcementCount.total}
@@ -370,9 +371,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     <span
                       className="pill-locked"
                       style={{
-                        background: 'rgba(220, 38, 38, 0.14)',
-                        color: '#DC2626',
-                        borderColor: 'rgba(220, 38, 38, 0.35)',
+                        background: 'rgba(239, 68, 68, 0.16)',
+                        color: '#FCA5A5',
+                        borderColor: 'rgba(239, 68, 68, 0.45)',
                       }}
                     >
                       <Icon name="x-circle" size={12} />
@@ -382,9 +383,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     <span
                       className="pill-completed"
                       style={{
-                        background: 'rgba(22, 163, 74, 0.14)',
-                        color: '#15803D',
-                        borderColor: 'rgba(22, 163, 74, 0.35)',
+                        background: 'rgba(16, 185, 129, 0.16)',
+                        color: '#34D399',
+                        borderColor: 'rgba(16, 185, 129, 0.45)',
                       }}
                     >
                       <Icon name="award" size={12} />
@@ -394,9 +395,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     <span
                       className="pill-locked"
                       style={{
-                        background: 'rgba(217, 119, 6, 0.14)',
-                        color: '#B45309',
-                        borderColor: 'rgba(217, 119, 6, 0.35)',
+                        background: 'rgba(245, 158, 11, 0.16)',
+                        color: '#FDE68A',
+                        borderColor: 'rgba(245, 158, 11, 0.45)',
                       }}
                     >
                       <Icon name="clock" size={12} />
@@ -452,9 +453,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 <div
                   className="stage-status-indicator stage-status-locked"
                   style={{
-                    background: '#FEF2F2',
-                    color: '#DC2626',
-                    borderColor: '#FECACA',
+                    background: 'rgba(239, 68, 68, 0.14)',
+                    color: '#FCA5A5',
+                    borderColor: 'rgba(239, 68, 68, 0.45)',
                   }}
                 >
                   <Icon name="x-circle" size={18} />
@@ -464,9 +465,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 <div
                   className="stage-status-indicator stage-status-completed"
                   style={{
-                    background: '#ECFDF5',
-                    color: '#059669',
-                    borderColor: '#A7F3D0',
+                    background: 'rgba(16, 185, 129, 0.14)',
+                    color: '#34D399',
+                    borderColor: 'rgba(16, 185, 129, 0.45)',
                   }}
                 >
                   <Icon name="award" size={18} />
@@ -532,9 +533,10 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '14px',
                     padding: '16px 20px',
                     borderRadius: '14px',
-                    background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
-                    border: '1px solid #6EE7B7',
-                    color: '#065F46',
+                    background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.42) 0%, rgba(16, 185, 129, 0.16) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.45)',
+                    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.35)',
+                    color: '#A7F3D0',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -543,8 +545,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                         width: '40px',
                         height: '40px',
                         borderRadius: '10px',
-                        background: '#059669',
-                        color: '#FFFFFF',
+                        background: 'rgba(16, 185, 129, 0.22)',
+                        border: '1px solid rgba(52, 211, 153, 0.45)',
+                        color: '#34D399',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -554,11 +557,11 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       <Icon name="trophy" size={20} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#064E3B' }}>
+                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#34D399' }}>
                         Congratulations! You Are Officially Qualified for Round {activeRoundMeta.id}!
                       </div>
-                      <div style={{ fontSize: '13px', color: '#047857', marginTop: '2px' }}>
-                        Round {activeStageQual.sourceRound} Score: <strong>{activeStageQual.score ?? 0} PTS</strong>
+                      <div style={{ fontSize: '13px', color: '#A7F3D0', marginTop: '2px' }}>
+                        Round {activeStageQual.sourceRound} Score: <strong style={{ color: '#FFFFFF' }}>{activeStageQual.score ?? 0} PTS</strong>
                         {activeStageQual.rank ? ` • Qualifier Rank #${activeStageQual.rank}` : ''}
                       </div>
                     </div>
@@ -570,9 +573,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       style={{
                         padding: '8px 14px',
                         borderRadius: '8px',
-                        border: '1px solid #059669',
-                        background: '#FFFFFF',
-                        color: '#059669',
+                        border: '1px solid rgba(52, 211, 153, 0.5)',
+                        background: 'rgba(16, 185, 129, 0.18)',
+                        color: '#6EE7B7',
                         fontSize: '12.5px',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -594,9 +597,10 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '14px',
                     padding: '16px 20px',
                     borderRadius: '14px',
-                    background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)',
-                    border: '1px solid #FCA5A5',
-                    color: '#991B1B',
+                    background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.45) 0%, rgba(239, 68, 68, 0.16) 100%)',
+                    border: '1px solid rgba(239, 68, 68, 0.45)',
+                    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.35)',
+                    color: '#FECACA',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -605,8 +609,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                         width: '40px',
                         height: '40px',
                         borderRadius: '10px',
-                        background: '#DC2626',
-                        color: '#FFFFFF',
+                        background: 'rgba(239, 68, 68, 0.22)',
+                        border: '1px solid rgba(248, 113, 113, 0.45)',
+                        color: '#FCA5A5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -616,10 +621,10 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       <Icon name="x-circle" size={20} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#7F1D1D' }}>
+                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#FCA5A5' }}>
                         You Have Not Qualified for Round {activeRoundMeta.id}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#B91C1C', marginTop: '2px' }}>
+                      <div style={{ fontSize: '13px', color: '#FECACA', marginTop: '2px' }}>
                         Only the top {activeStageQual.qualifiedCount > 0 ? `${activeStageQual.qualifiedCount} ` : ''}candidates from Round {activeStageQual.sourceRound} were selected to advance to Round {activeRoundMeta.id}.
                       </div>
                     </div>
@@ -631,9 +636,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       style={{
                         padding: '8px 14px',
                         borderRadius: '8px',
-                        border: '1px solid #DC2626',
-                        background: '#FFFFFF',
-                        color: '#DC2626',
+                        border: '1px solid rgba(248, 113, 113, 0.5)',
+                        background: 'rgba(239, 68, 68, 0.18)',
+                        color: '#FCA5A5',
                         fontSize: '12.5px',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -655,9 +660,10 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '14px',
                     padding: '16px 20px',
                     borderRadius: '14px',
-                    background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
-                    border: '1px solid #FCD34D',
-                    color: '#92400E',
+                    background: 'linear-gradient(135deg, rgba(120, 53, 15, 0.42) 0%, rgba(245, 158, 11, 0.16) 100%)',
+                    border: '1px solid rgba(245, 158, 11, 0.45)',
+                    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.35)',
+                    color: '#FDE68A',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -666,8 +672,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                         width: '40px',
                         height: '40px',
                         borderRadius: '10px',
-                        background: '#D97706',
-                        color: '#FFFFFF',
+                        background: 'rgba(245, 158, 11, 0.22)',
+                        border: '1px solid rgba(251, 191, 36, 0.45)',
+                        color: '#FBBF24',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -677,10 +684,10 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       <Icon name="clock" size={20} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#78350F' }}>
+                      <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#FDE68A' }}>
                         Round {activeStageQual.sourceRound} Submitted — Awaiting Official Qualification Cutoff
                       </div>
-                      <div style={{ fontSize: '13px', color: '#B45309', marginTop: '2px' }}>
+                      <div style={{ fontSize: '13px', color: '#FCD34D', marginTop: '2px' }}>
                         Your Round {activeStageQual.sourceRound} score ({activeStageQual.score ?? 0} PTS) is recorded. You will receive an automatic pop-up notification once the administrator publishes qualifiers for Round {activeRoundMeta.id}.
                       </div>
                     </div>
@@ -715,15 +722,15 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '12px',
                     padding: '15px 18px',
                     borderRadius: '12px',
-                    background: '#ECFDF5',
-                    border: '1px solid #6EE7B7',
-                    color: '#065F46',
+                    background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.42) 0%, rgba(16, 185, 129, 0.16) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.45)',
+                    color: '#6EE7B7',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700, fontSize: '13.5px' }}>
                     <Icon name="award" size={18} />
                     <span>
-                      You have qualified for <strong>Round {nextStageQual.targetRound}</strong>!{nextStageQual.rank ? ` (Rank #${nextStageQual.rank})` : ''}
+                      You have qualified for <strong style={{ color: '#FFFFFF' }}>Round {nextStageQual.targetRound}</strong>!{nextStageQual.rank ? ` (Rank #${nextStageQual.rank})` : ''}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -734,9 +741,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                         style={{
                           padding: '7px 13px',
                           borderRadius: '8px',
-                          border: '1px solid #059669',
-                          background: '#FFFFFF',
-                          color: '#059669',
+                          border: '1px solid rgba(52, 211, 153, 0.5)',
+                          background: 'rgba(16, 185, 129, 0.18)',
+                          color: '#6EE7B7',
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -751,8 +758,8 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       style={{
                         padding: '7px 14px',
                         borderRadius: '8px',
-                        border: 'none',
-                        background: '#059669',
+                        border: '1px solid rgba(52, 211, 153, 0.4)',
+                        background: 'linear-gradient(135deg, #059669, #10B981)',
                         color: '#FFFFFF',
                         fontSize: '12px',
                         fontWeight: 700,
@@ -775,9 +782,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '12px',
                     padding: '15px 18px',
                     borderRadius: '12px',
-                    background: '#FEF2F2',
-                    border: '1px solid #FCA5A5',
-                    color: '#991B1B',
+                    background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.45) 0%, rgba(239, 68, 68, 0.16) 100%)',
+                    border: '1px solid rgba(239, 68, 68, 0.45)',
+                    color: '#FCA5A5',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700, fontSize: '13.5px' }}>
@@ -793,9 +800,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                       style={{
                         padding: '7px 13px',
                         borderRadius: '8px',
-                        border: '1px solid #DC2626',
-                        background: '#FFFFFF',
-                        color: '#DC2626',
+                        border: '1px solid rgba(248, 113, 113, 0.5)',
+                        background: 'rgba(239, 68, 68, 0.18)',
+                        color: '#FCA5A5',
                         fontSize: '12px',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -815,9 +822,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                     gap: '10px',
                     padding: '14px 18px',
                     borderRadius: '12px',
-                    background: '#FFFBEB',
-                    border: '1px solid #FDE68A',
-                    color: '#92400E',
+                    background: 'linear-gradient(135deg, rgba(120, 53, 15, 0.42) 0%, rgba(245, 158, 11, 0.16) 100%)',
+                    border: '1px solid rgba(245, 158, 11, 0.45)',
+                    color: '#FDE68A',
                     fontSize: '13px',
                     fontWeight: 600,
                   }}
@@ -834,7 +841,7 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
           {/* Direct Launch Action for the Selected Tab */}
           <div className="stage-cta-container">
             {isCompleted ? (
-              <div className="stage-done-notice" style={{ borderColor: 'rgba(34, 197, 94, 0.4)', background: 'rgba(34, 197, 94, 0.08)', color: '#15803D' }}>
+              <div className="stage-done-notice" style={{ borderColor: 'rgba(34, 197, 94, 0.45)', background: 'rgba(34, 197, 94, 0.14)', color: '#4ADE80' }}>
                 <Icon name="check-circle" size={20} />
                 <span>Stage Concluded — Entries and submissions are closed.</span>
               </div>
@@ -849,9 +856,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 onClick={() => onShowQualificationPopup && onShowQualificationPopup(activeRoundMeta.id as 2 | 3)}
                 className="btn-stage-action btn-disabled"
                 style={{
-                  borderColor: '#FCA5A5',
-                  background: '#FEF2F2',
-                  color: '#DC2626',
+                  borderColor: 'rgba(239, 68, 68, 0.45)',
+                  background: 'rgba(239, 68, 68, 0.14)',
+                  color: '#FCA5A5',
                   cursor: 'pointer',
                 }}
               >
@@ -864,9 +871,9 @@ export const CompetitionArenaPage: React.FC<CompetitionArenaPageProps> = ({
                 onClick={() => onShowQualificationPopup && onShowQualificationPopup(activeRoundMeta.id as 2 | 3)}
                 className="btn-stage-action btn-disabled"
                 style={{
-                  borderColor: '#FCD34D',
-                  background: '#FFFBEB',
-                  color: '#B45309',
+                  borderColor: 'rgba(245, 158, 11, 0.45)',
+                  background: 'rgba(245, 158, 11, 0.14)',
+                  color: '#FDE68A',
                   cursor: 'pointer',
                 }}
               >
