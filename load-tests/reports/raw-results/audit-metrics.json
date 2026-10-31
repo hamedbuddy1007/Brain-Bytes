@@ -1,0 +1,1135 @@
+{
+  "generatedAt": "2026-10-31T04:06:26.097Z",
+  "target": {
+    "environment": "In-Process Express Server + Live Neon PostgreSQL (Read-Only Safe Mode)",
+    "concurrentUserTarget": 200
+  },
+  "benchmarkTargets": {
+    "concurrentParticipants": 200,
+    "latency": {
+      "p95MaxMs": 500,
+      "p99MaxMs": 1000
+    },
+    "reliability": {
+      "maxHttpErrorRate": 0.01,
+      "submissionDataLoss": 0,
+      "unexplainedDuplicates": 0,
+      "crossParticipantCorruption": 0,
+      "dbConnectionLeaks": 0
+    },
+    "sustainedDurationMinutes": 15
+  },
+  "databaseAudit": {
+    "timestamp": "2026-10-31T04:05:31.157Z",
+    "connection": {
+      "hostRedacted": "ep-[REDACTED]-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb",
+      "isPoolerEndpoint": true,
+      "isIsolatedTestDbConfigured": false,
+      "tlsHandshakeAndConnectMs": 796.36,
+      "pingSamplesMs": [
+        71.15,
+        68.74,
+        66.94,
+        67.28,
+        68.12
+      ],
+      "avgQueryRoundTripMs": 68.45,
+      "configuredAppPoolMax": {
+        "standardNode": 10,
+        "vercelServerless": 3,
+        "connectionTimeoutMillis": 10000
+      },
+      "serverSettings": {
+        "max_connections": 901,
+        "server_version": "18.6 (4e5fd08)",
+        "active_db_connections": 1
+      }
+    },
+    "discoveredWorkload": {
+      "competitionStatus": "NOT_STARTED",
+      "activeRound": null,
+      "registrationOpen": true,
+      "rounds": [
+        {
+          "round_number": 1,
+          "name": "Round 1: Data MCQ",
+          "duration_seconds": 900,
+          "status": "locked",
+          "question_count": 50,
+          "total_question_rows": 50,
+          "points_correct": 1,
+          "points_wrong": 0
+        },
+        {
+          "round_number": 2,
+          "name": "Round 2: Graph Challenge",
+          "duration_seconds": 900,
+          "status": "locked",
+          "question_count": 30,
+          "total_question_rows": 30,
+          "points_correct": 1,
+          "points_wrong": 0
+        },
+        {
+          "round_number": 3,
+          "name": "Round 3: Rapid Fire",
+          "duration_seconds": 300,
+          "status": "locked",
+          "question_count": 30,
+          "total_question_rows": 30,
+          "points_correct": 5,
+          "points_wrong": -2
+        }
+      ],
+      "rowCounts": {
+        "participants_count": 1,
+        "loadtest_participants_count": 0,
+        "attempts_count": 0,
+        "answers_count": 0,
+        "audit_events_count": 1,
+        "admins_count": 1
+      }
+    },
+    "schemaAudit": {
+      "totalIndexes": 21,
+      "indexes": [
+        {
+          "tablename": "admins",
+          "indexname": "admins_email_key",
+          "indexdef": "CREATE UNIQUE INDEX admins_email_key ON public.admins USING btree (email)"
+        },
+        {
+          "tablename": "admins",
+          "indexname": "admins_pkey",
+          "indexdef": "CREATE UNIQUE INDEX admins_pkey ON public.admins USING btree (id)"
+        },
+        {
+          "tablename": "admins",
+          "indexname": "admins_username_key",
+          "indexdef": "CREATE UNIQUE INDEX admins_username_key ON public.admins USING btree (username)"
+        },
+        {
+          "tablename": "answers",
+          "indexname": "answers_pkey",
+          "indexdef": "CREATE UNIQUE INDEX answers_pkey ON public.answers USING btree (attempt_id, question_id)"
+        },
+        {
+          "tablename": "attempts",
+          "indexname": "attempts_participant_id_round_id_key",
+          "indexdef": "CREATE UNIQUE INDEX attempts_participant_id_round_id_key ON public.attempts USING btree (participant_id, round_id)"
+        },
+        {
+          "tablename": "attempts",
+          "indexname": "attempts_pkey",
+          "indexdef": "CREATE UNIQUE INDEX attempts_pkey ON public.attempts USING btree (id)"
+        },
+        {
+          "tablename": "attempts",
+          "indexname": "idx_attempts_round_submitted",
+          "indexdef": "CREATE INDEX idx_attempts_round_submitted ON public.attempts USING btree (round_id, submitted_at)"
+        },
+        {
+          "tablename": "audit_events",
+          "indexname": "audit_events_pkey",
+          "indexdef": "CREATE UNIQUE INDEX audit_events_pkey ON public.audit_events USING btree (id)"
+        },
+        {
+          "tablename": "audit_events",
+          "indexname": "idx_audit_events_created",
+          "indexdef": "CREATE INDEX idx_audit_events_created ON public.audit_events USING btree (created_at DESC)"
+        },
+        {
+          "tablename": "competition_state",
+          "indexname": "competition_state_pkey",
+          "indexdef": "CREATE UNIQUE INDEX competition_state_pkey ON public.competition_state USING btree (singleton)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "idx_participants_access_code",
+          "indexdef": "CREATE INDEX idx_participants_access_code ON public.participants USING btree (access_code)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "idx_participants_approval_status",
+          "indexdef": "CREATE INDEX idx_participants_approval_status ON public.participants USING btree (approval_status)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "idx_participants_roll",
+          "indexdef": "CREATE INDEX idx_participants_roll ON public.participants USING btree (roll_number)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "idx_participants_ticket",
+          "indexdef": "CREATE INDEX idx_participants_ticket ON public.participants USING btree (ticket_id)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "participants_access_code_key",
+          "indexdef": "CREATE UNIQUE INDEX participants_access_code_key ON public.participants USING btree (access_code)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "participants_pkey",
+          "indexdef": "CREATE UNIQUE INDEX participants_pkey ON public.participants USING btree (id)"
+        },
+        {
+          "tablename": "participants",
+          "indexname": "participants_roll_number_key",
+          "indexdef": "CREATE UNIQUE INDEX participants_roll_number_key ON public.participants USING btree (roll_number)"
+        },
+        {
+          "tablename": "playing_with_neon",
+          "indexname": "playing_with_neon_pkey",
+          "indexdef": "CREATE UNIQUE INDEX playing_with_neon_pkey ON public.playing_with_neon USING btree (id)"
+        },
+        {
+          "tablename": "questions",
+          "indexname": "idx_questions_round",
+          "indexdef": "CREATE INDEX idx_questions_round ON public.questions USING btree (round_id, enabled, sort_order)"
+        },
+        {
+          "tablename": "questions",
+          "indexname": "questions_pkey",
+          "indexdef": "CREATE UNIQUE INDEX questions_pkey ON public.questions USING btree (id)"
+        },
+        {
+          "tablename": "questions",
+          "indexname": "questions_round_id_sort_order_key",
+          "indexdef": "CREATE UNIQUE INDEX questions_round_id_sort_order_key ON public.questions USING btree (round_id, sort_order)"
+        }
+      ],
+      "hasAuditEventTypeIndex": false,
+      "missingRecommendedIndexes": [
+        "idx_audit_events_type_created ON audit_events(event_type, created_at DESC, id DESC)"
+      ],
+      "tableStats": [
+        {
+          "table_name": "attempts",
+          "seq_scan": 26798,
+          "seq_tup_read": 37910,
+          "idx_scan": 8670,
+          "idx_tup_fetch": 3955,
+          "live_rows": 0,
+          "dead_rows": 35
+        },
+        {
+          "table_name": "participants",
+          "seq_scan": 19948,
+          "seq_tup_read": 21140,
+          "idx_scan": 17697,
+          "idx_tup_fetch": 15705,
+          "live_rows": 1,
+          "dead_rows": 35
+        },
+        {
+          "table_name": "competition_state",
+          "seq_scan": 15824,
+          "seq_tup_read": 15823,
+          "idx_scan": 2238,
+          "idx_tup_fetch": 2237,
+          "live_rows": 1,
+          "dead_rows": 29
+        },
+        {
+          "table_name": "audit_events",
+          "seq_scan": 15292,
+          "seq_tup_read": 1016121,
+          "idx_scan": 3253,
+          "idx_tup_fetch": 39909,
+          "live_rows": 1,
+          "dead_rows": 0
+        },
+        {
+          "table_name": "questions",
+          "seq_scan": 664,
+          "seq_tup_read": 64115,
+          "idx_scan": 4636,
+          "idx_tup_fetch": 4500,
+          "live_rows": 110,
+          "dead_rows": 0
+        },
+        {
+          "table_name": "answers",
+          "seq_scan": 607,
+          "seq_tup_read": 8591,
+          "idx_scan": 916,
+          "idx_tup_fetch": 70,
+          "live_rows": 0,
+          "dead_rows": 37
+        },
+        {
+          "table_name": "admins",
+          "seq_scan": 264,
+          "seq_tup_read": 260,
+          "idx_scan": 196,
+          "idx_tup_fetch": 196,
+          "live_rows": 1,
+          "dead_rows": 17
+        },
+        {
+          "table_name": "playing_with_neon",
+          "seq_scan": 3,
+          "seq_tup_read": 10,
+          "idx_scan": 7,
+          "idx_tup_fetch": 40,
+          "live_rows": 0,
+          "dead_rows": 10
+        }
+      ]
+    },
+    "explainPlans": {
+      "competition_state_broadcast_poll": {
+        "nodeType": "Limit",
+        "relationName": null,
+        "indexName": null,
+        "startupCost": 1.57,
+        "totalCost": 1.58,
+        "planRows": 1,
+        "rawPlan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1.57,
+          "Total Cost": 1.58,
+          "Plan Rows": 1,
+          "Plan Width": 112,
+          "Disabled": false,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 1.57,
+              "Total Cost": 1.58,
+              "Plan Rows": 1,
+              "Plan Width": 112,
+              "Disabled": false,
+              "Sort Key": [
+                "created_at DESC",
+                "id DESC"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "audit_events",
+                  "Alias": "audit_events",
+                  "Startup Cost": 0,
+                  "Total Cost": 1.56,
+                  "Plan Rows": 1,
+                  "Plan Width": 112,
+                  "Disabled": false,
+                  "Filter": "(event_type = 'admin.broadcast'::text)"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "qualification_map_scan": {
+        "nodeType": "Sort",
+        "relationName": null,
+        "indexName": null,
+        "startupCost": 1.64,
+        "totalCost": 1.65,
+        "planRows": 3,
+        "rawPlan": {
+          "Node Type": "Sort",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1.64,
+          "Total Cost": 1.65,
+          "Plan Rows": 3,
+          "Plan Width": 136,
+          "Disabled": false,
+          "Sort Key": [
+            "created_at DESC",
+            "id DESC"
+          ],
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "audit_events",
+              "Alias": "audit_events",
+              "Startup Cost": 0,
+              "Total Cost": 1.62,
+              "Plan Rows": 3,
+              "Plan Width": 136,
+              "Disabled": false,
+              "Filter": "(event_type = ANY ('{qualification.executed,round2.qualified,round3.qualified}'::text[]))"
+            }
+          ]
+        }
+      },
+      "round_questions_lookup": {
+        "nodeType": "Sort",
+        "relationName": null,
+        "indexName": null,
+        "startupCost": 12.79,
+        "totalCost": 12.91,
+        "planRows": 50,
+        "rawPlan": {
+          "Node Type": "Sort",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 12.79,
+          "Total Cost": 12.91,
+          "Plan Rows": 50,
+          "Plan Width": 141,
+          "Disabled": false,
+          "Sort Key": [
+            "sort_order"
+          ],
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "questions",
+              "Alias": "questions",
+              "Startup Cost": 0,
+              "Total Cost": 11.38,
+              "Plan Rows": 50,
+              "Plan Width": 141,
+              "Disabled": false,
+              "Filter": "(enabled AND (round_id = 1))"
+            }
+          ]
+        }
+      },
+      "leaderboard_aggregation": {
+        "nodeType": "Aggregate",
+        "relationName": null,
+        "indexName": null,
+        "startupCost": 2.03,
+        "totalCost": 2.06,
+        "planRows": 1,
+        "rawPlan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Sorted",
+          "Partial Mode": "Simple",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 2.03,
+          "Total Cost": 2.06,
+          "Plan Rows": 1,
+          "Plan Width": 31,
+          "Disabled": false,
+          "Group Key": [
+            "p.id"
+          ],
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 2.03,
+              "Total Cost": 2.04,
+              "Plan Rows": 1,
+              "Plan Width": 29,
+              "Disabled": false,
+              "Sort Key": [
+                "p.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0,
+                  "Total Cost": 2.02,
+                  "Plan Rows": 1,
+                  "Plan Width": 29,
+                  "Disabled": false,
+                  "Inner Unique": false,
+                  "Join Filter": "(a.participant_id = p.id)",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "participants",
+                      "Alias": "p",
+                      "Startup Cost": 0,
+                      "Total Cost": 1,
+                      "Plan Rows": 1,
+                      "Plan Width": 15,
+                      "Disabled": false
+                    },
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "attempts",
+                      "Alias": "a",
+                      "Startup Cost": 0,
+                      "Total Cost": 1.01,
+                      "Plan Rows": 1,
+                      "Plan Width": 22,
+                      "Disabled": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "dataIntegrity": {
+      "duplicate_participant_round_attempts": 0,
+      "duplicate_attempt_question_answers": 0
+    }
+  },
+  "scenarios": {
+    "test01_baseline": {
+      "vus_1": {
+        "name": "Baseline (1 VUs)",
+        "totalRequests": 5,
+        "wallDurationMs": 1578.07,
+        "throughputRps": 3.17,
+        "successCount": 5,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 5
+        },
+        "latency": {
+          "count": 5,
+          "min": 69.53,
+          "avg": 337.84,
+          "p50": 263.17,
+          "p90": 779.61,
+          "p95": 779.61,
+          "p99": 779.61,
+          "max": 779.61
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": true,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 1
+      },
+      "vus_5": {
+        "name": "Baseline (5 VUs)",
+        "totalRequests": 25,
+        "wallDurationMs": 1239.9,
+        "throughputRps": 20.16,
+        "successCount": 25,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 25
+        },
+        "latency": {
+          "count": 25,
+          "min": 56.74,
+          "avg": 190.67,
+          "p50": 84.28,
+          "p90": 500.02,
+          "p95": 515.77,
+          "p99": 585.78,
+          "max": 585.78
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": true,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 5
+      },
+      "vus_10": {
+        "name": "Baseline (10 VUs)",
+        "totalRequests": 50,
+        "wallDurationMs": 1134.86,
+        "throughputRps": 44.06,
+        "successCount": 50,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 50
+        },
+        "latency": {
+          "count": 50,
+          "min": 56.97,
+          "avg": 184.35,
+          "p50": 97.16,
+          "p90": 440.29,
+          "p95": 624.27,
+          "p99": 874.28,
+          "max": 874.28
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": true,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 10
+      }
+    },
+    "test02_login_storm": {
+      "sharedCampusNatIp": {
+        "description": "200 concurrent participants logging in from a shared college lab/auditorium public IP",
+        "totalUsers": 200,
+        "wallDurationMs": 1229.26,
+        "passedRateLimiterCount": 15,
+        "blockedByHttp429Count": 185,
+        "http429RejectionRatePct": 92.5,
+        "latency": {
+          "count": 200,
+          "min": 861.67,
+          "avg": 996.1,
+          "p50": 981.63,
+          "p90": 1092.29,
+          "p95": 1092.65,
+          "p99": 1197.94,
+          "max": 1292.37
+        },
+        "statusCounts": {
+          "404": 15,
+          "429": 185
+        },
+        "verdict": "FAIL (92.5% blocked by HTTP 429)"
+      },
+      "distributedClientIps": {
+        "description": "200 concurrent participants logging in from 200 distinct IPs (concurrent DB lookup + pool queuing)",
+        "totalUsers": 200,
+        "wallDurationMs": 1955.64,
+        "passedRateLimiterCount": 200,
+        "blockedByHttp429Count": 0,
+        "latency": {
+          "count": 200,
+          "min": 319.29,
+          "avg": 1095.27,
+          "p50": 1102.5,
+          "p90": 1834.86,
+          "p95": 1893.94,
+          "p99": 1946.78,
+          "max": 1955.74
+        },
+        "verdict": "FAIL (p95=1893.94ms, p99=1946.78ms exceed 500ms/1000ms targets due to 10-connection pool serialization)"
+      }
+    },
+    "test03_question_retrieval": {
+      "round1_50_questions": {
+        "name": "200 VUs - Round 1 Questions (50 Qs)",
+        "totalRequests": 200,
+        "wallDurationMs": 3090.74,
+        "throughputRps": 64.71,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 140.96,
+          "avg": 1581.17,
+          "p50": 1561.26,
+          "p90": 2547.42,
+          "p95": 2634.62,
+          "p99": 2692.73,
+          "max": 3091.28
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      },
+      "round2_30_questions": {
+        "name": "200 VUs - Round 2 Questions (30 Qs)",
+        "totalRequests": 200,
+        "wallDurationMs": 3708.87,
+        "throughputRps": 53.92,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 164.94,
+          "avg": 2024.97,
+          "p50": 2112.92,
+          "p90": 3334.04,
+          "p95": 3431.19,
+          "p99": 3533.42,
+          "max": 3708.99
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      },
+      "round3_30_questions": {
+        "name": "200 VUs - Round 3 Questions (30 Qs)",
+        "totalRequests": 200,
+        "wallDurationMs": 1959.02,
+        "throughputRps": 102.09,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 189.1,
+          "avg": 869.05,
+          "p50": 747.02,
+          "p90": 1643.54,
+          "p95": 1729.13,
+          "p99": 1800.13,
+          "max": 1959.84
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      }
+    },
+    "test04_answer_saving_and_polling": {
+      "architectureNote": "Answer selection, answer modification, and mark-for-review are persisted client-side in localStorage (bb_r1_state_<id>, bb_r2_state_<id>, bb_r3_state_<id>) with zero HTTP overhead per click. Network load during active answering comes from 4 concurrent polling loops per participant (~270 req/s total at 200 users).",
+      "competitionState200Concurrent": {
+        "name": "200 VUs - GET /api/competition/state (2 parallel SQL queries + 2 audit_events subqueries per poll)",
+        "totalRequests": 200,
+        "wallDurationMs": 3187.8,
+        "throughputRps": 62.74,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 106.75,
+          "avg": 1558.12,
+          "p50": 1602.44,
+          "p90": 2723.55,
+          "p95": 2823.46,
+          "p99": 2962.64,
+          "max": 3187.96
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      },
+      "sharedNatParticipantLimiterTest": {
+        "description": "200 participants on shared campus IP polling GET /api/participants/me (3.5s interval + 2.5s active-deadline -> 700 requests in ~5.2 seconds vs 600/5min limit)",
+        "totalRequests": 700,
+        "rateLimitCapPer5Min": 600,
+        "http429Count": 100,
+        "exhaustionTimeSecondsAt200Users": 4.4,
+        "verdict": "FAIL (100 requests rejected with HTTP 429 after ~4.4–10.5 seconds of 200-user polling on shared IP)"
+      }
+    },
+    "test05_submission_burst": {
+      "safetyGateStatus": "PRODUCTION_DB_PROTECTED (Write-intensive 10,000-row INSERT burst gated per Phase 3 safety rule)",
+      "sharedCampusNatSubmissionBurst": {
+        "totalSubmissions": 200,
+        "rateLimitCapPerMinutePerIp": 30,
+        "passedRateLimiterCount": 30,
+        "blockedByHttp429Count": 170,
+        "http429RejectionRatePct": 85,
+        "verdict": "FAIL (170/200 submissions [85%] rejected with HTTP 429 Too Many Requests under shared campus IP)"
+      },
+      "databaseTransactionBottleneckModel": {
+        "measuredSingleSqlRttMs": 68.45,
+        "sequentialSqlQueriesPerRound1Submit": 56,
+        "totalSqlQueriesFor200ConcurrentSubmits": 11200,
+        "singleParticipantTransactionHoldingTimeMs": 3833.2,
+        "nodePool10Connections": {
+          "maxConnections": 10,
+          "connectionTimeoutMillis": 10000,
+          "serializedWavesFor200Users": 20,
+          "projectedTailLatencyP99Ms": 76664,
+          "exceeds10sConnectionTimeout": true
+        },
+        "vercelServerlessPool3Connections": {
+          "maxConnections": 3,
+          "connectionTimeoutMillis": 10000,
+          "serializedWavesFor200Users": 67,
+          "projectedTailLatencyP99Ms": 256824.4,
+          "exceeds10sConnectionTimeout": true
+        }
+      }
+    },
+    "test06_admin_under_load": {
+      "adminEndpointsWhile200Active": {
+        "name": "Admin Console Polling Under 200-User Load",
+        "totalRequests": 12,
+        "wallDurationMs": 3304.98,
+        "throughputRps": 3.63,
+        "successCount": 12,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 12
+        },
+        "latency": {
+          "count": 12,
+          "min": 3153.6,
+          "avg": 3223.38,
+          "p50": 3225.07,
+          "p90": 3302.16,
+          "p95": 3305.07,
+          "p99": 3305.07,
+          "max": 3305.07
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      },
+      "participantTrafficDuringAdminPoll": {
+        "name": "200 Participants During Admin Polling",
+        "totalRequests": 200,
+        "wallDurationMs": 3304.98,
+        "throughputRps": 60.51,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 117.27,
+          "avg": 1646.37,
+          "p50": 1700.35,
+          "p90": 2685.35,
+          "p95": 2773.05,
+          "p99": 2863.22,
+          "max": 2873.1
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        }
+      }
+    },
+    "test08_capacity_ramp": {
+      "vus_50": {
+        "name": "Capacity Ramp (50 VUs)",
+        "totalRequests": 50,
+        "wallDurationMs": 581.07,
+        "throughputRps": 86.05,
+        "successCount": 50,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 50
+        },
+        "latency": {
+          "count": 50,
+          "min": 73.51,
+          "avg": 323.32,
+          "p50": 331.8,
+          "p90": 519.83,
+          "p95": 567.93,
+          "p99": 583.3,
+          "max": 583.3
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": true,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 50
+      },
+      "vus_100": {
+        "name": "Capacity Ramp (100 VUs)",
+        "totalRequests": 100,
+        "wallDurationMs": 1172.14,
+        "throughputRps": 85.31,
+        "successCount": 100,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 100
+        },
+        "latency": {
+          "count": 100,
+          "min": 85.23,
+          "avg": 566.81,
+          "p50": 548.76,
+          "p90": 976.67,
+          "p95": 1034.75,
+          "p99": 1157.75,
+          "max": 1172.48
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 100
+      },
+      "vus_150": {
+        "name": "Capacity Ramp (150 VUs)",
+        "totalRequests": 150,
+        "wallDurationMs": 1730.88,
+        "throughputRps": 86.66,
+        "successCount": 150,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 150
+        },
+        "latency": {
+          "count": 150,
+          "min": 185.71,
+          "avg": 1018.61,
+          "p50": 1058.65,
+          "p90": 1591.93,
+          "p95": 1678.38,
+          "p99": 1709.38,
+          "max": 1739.68
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 150
+      },
+      "vus_200": {
+        "name": "Capacity Ramp (200 VUs)",
+        "totalRequests": 200,
+        "wallDurationMs": 3043.09,
+        "throughputRps": 65.72,
+        "successCount": 200,
+        "rateLimitedCount": 0,
+        "errorCount": 0,
+        "errorRatePct": 0,
+        "statusCounts": {
+          "200": 200
+        },
+        "latency": {
+          "count": 200,
+          "min": 273.76,
+          "avg": 1237.51,
+          "p50": 1087.28,
+          "p90": 2099.96,
+          "p95": 2240.92,
+          "p99": 2450.71,
+          "max": 3043.76
+        },
+        "benchmarkCheck": {
+          "passLatencyP95": false,
+          "passLatencyP99": false,
+          "passErrorRate": true,
+          "overallPass": false
+        },
+        "concurrentUsers": 200
+      }
+    },
+    "test07_sustained_concurrency": {
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Sustained Wave 1 (200 VUs)",
+          "totalRequests": 200,
+          "wallDurationMs": 2033.46,
+          "throughputRps": 98.35,
+          "successCount": 200,
+          "rateLimitedCount": 0,
+          "errorCount": 0,
+          "errorRatePct": 0,
+          "statusCounts": {
+            "200": 200
+          },
+          "latency": {
+            "count": 200,
+            "min": 109.09,
+            "avg": 1103.02,
+            "p50": 1104.81,
+            "p90": 1923.05,
+            "p95": 1975.33,
+            "p99": 2030.91,
+            "max": 2036
+          },
+          "benchmarkCheck": {
+            "passLatencyP95": false,
+            "passLatencyP99": false,
+            "passErrorRate": true,
+            "overallPass": false
+          },
+          "heapUsedMb": 111.37,
+          "rssMb": 258.73
+        },
+        {
+          "wave": 2,
+          "name": "Sustained Wave 2 (200 VUs)",
+          "totalRequests": 200,
+          "wallDurationMs": 1314.23,
+          "throughputRps": 152.18,
+          "successCount": 200,
+          "rateLimitedCount": 0,
+          "errorCount": 0,
+          "errorRatePct": 0,
+          "statusCounts": {
+            "200": 200
+          },
+          "latency": {
+            "count": 200,
+            "min": 176.88,
+            "avg": 721.1,
+            "p50": 707.83,
+            "p90": 1185.32,
+            "p95": 1241.88,
+            "p99": 1306.26,
+            "max": 1314.98
+          },
+          "benchmarkCheck": {
+            "passLatencyP95": false,
+            "passLatencyP99": false,
+            "passErrorRate": true,
+            "overallPass": false
+          },
+          "heapUsedMb": 103.24,
+          "rssMb": 263.2
+        },
+        {
+          "wave": 3,
+          "name": "Sustained Wave 3 (200 VUs)",
+          "totalRequests": 200,
+          "wallDurationMs": 2100.28,
+          "throughputRps": 95.23,
+          "successCount": 200,
+          "rateLimitedCount": 0,
+          "errorCount": 0,
+          "errorRatePct": 0,
+          "statusCounts": {
+            "200": 200
+          },
+          "latency": {
+            "count": 200,
+            "min": 396.15,
+            "avg": 1367.38,
+            "p50": 1421.04,
+            "p90": 1993.1,
+            "p95": 2042.38,
+            "p99": 2081.44,
+            "max": 2100.46
+          },
+          "benchmarkCheck": {
+            "passLatencyP95": false,
+            "passLatencyP99": false,
+            "passErrorRate": true,
+            "overallPass": false
+          },
+          "heapUsedMb": 93.17,
+          "rssMb": 264.28
+        }
+      ],
+      "memoryStartHeapMb": 17.28,
+      "memoryEndHeapMb": 93.17
+    },
+    "phase07_security_under_load": {
+      "checks": [
+        {
+          "check": "Unauthenticated admin access rejected",
+          "endpoint": "GET /api/admin/overview-stats",
+          "expectedStatus": 401,
+          "actualStatus": 401,
+          "passed": true
+        },
+        {
+          "check": "Participant token blocked from admin roster endpoint",
+          "endpoint": "GET /api/admin/participants",
+          "expectedStatus": 403,
+          "actualStatus": 403,
+          "passed": true
+        },
+        {
+          "check": "Forged JWT signature rejected",
+          "endpoint": "GET /api/participants/me",
+          "expectedStatus": 401,
+          "actualStatus": 401,
+          "passed": true
+        },
+        {
+          "check": "Participant blocked from inspecting another participant answer sheet",
+          "endpoint": "GET /api/admin/participants/1/answers",
+          "expectedStatus": 403,
+          "actualStatus": 403,
+          "passed": true
+        },
+        {
+          "check": "Correct answer key (correct_answer) never leaked in question retrieval payload",
+          "endpoint": "GET /api/rounds/1/questions",
+          "expectedStatus": "false",
+          "actualStatus": "false",
+          "passed": true
+        },
+        {
+          "check": "Security headers enforced under load (X-Content-Type-Options: nosniff, X-Frame-Options: DENY)",
+          "endpoint": "GET /api/health",
+          "expectedStatus": "nosniff / DENY",
+          "actualStatus": "nosniff / DENY",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "readinessDecision": {
+    "classification": "FAIL",
+    "canSupport200ConcurrentUsersAsIs": false,
+    "estimatedSafeConcurrentCapacitySharedCampusIp": 15,
+    "estimatedSafeConcurrentCapacityDistributedIps": 45,
+    "primaryBlockers": [
+      "BOTTLENECK 1 (CRITICAL): Per-IP Rate Limiters in backend/src/app.js block 85%–95% of 200 college lab/campus Wi-Fi users sharing a public NAT IP (login-access-code limit=15/10min, register limit=10/15min, submit limit=30/min, participant poll limit=600/5min).",
+      "BOTTLENECK 2 (CRITICAL): 50 Sequential SQL INSERT round-trips inside a single FOR UPDATE transaction in POST /api/attempts/:attemptId/submit (backend/src/routes.js lines 987–1015) hold a DB connection for ~3.5s–8.5s per user, exhausting the 10-connection (or 3-connection Vercel) pool during a 200-user submission burst.",
+      "BOTTLENECK 3 (HIGH): High-frequency multi-component frontend polling (~270 req/s at 200 users across /competition/state, /participants/me, and /active-deadline) combined with unindexed event_type scans on audit_events saturates the Neon PostgreSQL connection pool."
+    ]
+  }
+}

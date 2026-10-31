@@ -55,13 +55,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://va.vercel-scripts.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
       connectSrc: [
         "'self'",
         ...configuredOrigins,
+        'https://va.vercel-scripts.com',
+        'https://vitals.vercel-insights.com',
         'https:',
         'http://localhost:*',
         'http://127.0.0.1:*',
